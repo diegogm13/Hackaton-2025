@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, SafeAreaView, ScrollView,
+  StyleSheet, ScrollView,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation';
@@ -11,12 +12,17 @@ type Props = {
   navigation: NativeStackNavigationProp<OnboardingStackParamList, 'DatosEstiloVida'>;
 };
 
+const ALERGIAS_LISTA = [
+  'Lactosa', 'Gluten', 'Mariscos', 'Frutos Secos', 'Maní', 'Huevo',
+  'Soya', 'Fructosa', 'Legumbres', 'Pescado', 'Fresa', 'Melocotón', 'Ninguna',
+];
+
 export default function DatosEstiloVidaScreen({ navigation }: Props) {
   const [rutina, setRutina] = useState(1);
   const [disponibilidad, setDisponibilidad] = useState(1);
   const [dieta, setDieta] = useState(0);
   const [habitos, setHabitos] = useState([false, false, false]);
-  const [alergias, setAlergias] = useState('');
+  const [alergiasSeleccionadas, setAlergiasSeleccionadas] = useState<string[]>([]);
 
   const RUTINAS = ['Nunca', '1-2x/sem', '3-4x/sem', '5+/sem'];
   const DISPONIBILIDAD = ['30 min', '1 hora', '2 horas', 'Flexible'];
@@ -27,6 +33,20 @@ export default function DatosEstiloVidaScreen({ navigation }: Props) {
     const next = [...habitos];
     next[i] = !next[i];
     setHabitos(next);
+  };
+
+  const toggleAlergia = (alg: string) => {
+    if (alg === 'Ninguna') {
+      setAlergiasSeleccionadas(['Ninguna']);
+      return;
+    }
+    setAlergiasSeleccionadas(prev => {
+      const filtered = prev.filter(a => a !== 'Ninguna');
+      if (filtered.includes(alg)) {
+        return filtered.filter(a => a !== alg);
+      }
+      return [...filtered, alg];
+    });
   };
 
   const ChipRow = ({
@@ -91,14 +111,21 @@ export default function DatosEstiloVidaScreen({ navigation }: Props) {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.fieldLabel}>Alergias alimentarias</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ej. lactosa, gluten, mariscos..."
-            placeholderTextColor={Colors.placeholder}
-            value={alergias}
-            onChangeText={setAlergias}
-          />
+          <Text style={styles.sectionTitle}>Alergias alimentarias</Text>
+          <View style={styles.chipsContainer}>
+            {ALERGIAS_LISTA.map((a) => {
+              const isSelected = alergiasSeleccionadas.includes(a);
+              return (
+                <TouchableOpacity
+                  key={a}
+                  style={[styles.chip, isSelected && styles.chipActive]}
+                  onPress={() => toggleAlergia(a)}
+                >
+                  <Text style={[styles.chipText, isSelected && styles.chipTextActive]}>{a}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
         <TouchableOpacity style={styles.btn} onPress={() => navigation.navigate('Personalizacion')}>
@@ -143,14 +170,7 @@ const styles = StyleSheet.create({
   toggleActive: { backgroundColor: Colors.accent },
   toggleDot: { width: 18, height: 18, borderRadius: 9, backgroundColor: Colors.white },
   toggleDotActive: { alignSelf: 'flex-end' },
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: Colors.textLabel, marginBottom: 8 },
-  input: {
-    height: Spacing.fieldHeight,
-    backgroundColor: Colors.surface,
-    borderRadius: Spacing.fieldRadius,
-    borderWidth: 1, borderColor: Colors.border,
-    paddingHorizontal: 20, color: Colors.white, fontSize: 15,
-  },
+  chipsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   btn: {
     height: Spacing.buttonHeight,
     backgroundColor: Colors.accent,
