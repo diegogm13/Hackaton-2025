@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, Animated, DimensionValue,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +18,17 @@ const MACROS = [
   { label: 'Proteínas', value: '145', unit: 'g', color: '#4ECDC4' },
   { label: 'Carbos', value: '210', unit: 'g', color: '#FFE66D' },
 ];
+
+const DIET_PLAN_STORAGE_KEY = '@plan_dieta_generado';
+
+type StoredDietPlan = {
+  plan_diario: Record<string, unknown>;
+  resumen_calorico_diario: number;
+  recomendaciones_personalizadas: string[];
+  advertencias_ingredientes: string[];
+};
+
+const buildUserScopedKey = (baseKey: string, userId: string) => `${baseKey}:${userId}`;
 
 const RUTINA = [
   { ejercicio: 'Press de banca', series: '4x10', peso: '60 kg', done: true },
@@ -55,6 +67,7 @@ export default function HomeScreen() {
   const { user } = useUser();
   const [iaMsg, setIaMsg] = useState('');
   const [iaLoading, setIaLoading] = useState(false);
+  const [dietPlan, setDietPlan] = useState<StoredDietPlan | null>(null);
 
   const nombre = user?.nombre ?? 'Atleta';
   const peso = user?.peso ?? '--';
@@ -69,6 +82,58 @@ export default function HomeScreen() {
       .catch(() => setIaMsg(`¡Hola ${nombre}! Sigue tu plan de hoy y mantén la constancia. Cada sesión te acerca a tu objetivo.`))
       .finally(() => setIaLoading(false));
   }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setDietPlan(null);
+      return;
+    }
+
+    const loadStoredDietPlan = async () => {
+      try {
+        const rawPlan = await AsyncStorage.getItem(
+          buildUserScopedKey(DIET_PLAN_STORAGE_KEY, user.id),
+        );
+
+        if (!rawPlan) {
+          setDietPlan(null);
+          return;
+        }
+
+        const parsed = JSON.parse(rawPlan) as StoredDietPlan;
+        setDietPlan(parsed);
+      } catch {
+        setDietPlan(null);
+      }
+    };
+
+    loadStoredDietPlan();
+  }, [user?.id]);
+
+  const caloriesObjective = dietPlan?.resumen_calorico_diario
+    ? `${dietPlan.resumen_calorico_diario}`
+    : '1,850';
+
+  const nutritionCards = dietPlan
+    ? [
+      { label: 'Calorías', value: caloriesObjective, unit: 'kcal', color: '#FF6B6B' },
+      {
+        label: 'Recomendaciones',
+        value: `${dietPlan.recomendaciones_personalizadas?.length ?? 0}`,
+        unit: 'items',
+        color: '#4ECDC4',
+      },
+      {
+        label: 'Advertencias',
+        value: `${dietPlan.advertencias_ingredientes?.length ?? 0}`,
+        unit: 'items',
+        color: '#FFE66D',
+      },
+    ]
+    : MACROS;
+
+  const nutritionHint = dietPlan?.recomendaciones_personalizadas?.[0]
+    ?? '1,205 / 1,850 kcal consumidas';
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -135,7 +200,7 @@ export default function HomeScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Nutrición de hoy</Text>
           <View style={styles.macrosRow}>
-            {MACROS.map((m) => (
+            {nutritionCards.map((m) => (
               <View key={m.label} style={styles.macroItem}>
                 <Text style={[styles.macroValue, { color: m.color }]}>{m.value}</Text>
                 <Text style={styles.macroUnit}>{m.unit}</Text>
@@ -146,7 +211,7 @@ export default function HomeScreen() {
           <View style={styles.progressBg}>
             <View style={[styles.progressFill, { width: '65%' }]} />
           </View>
-          <Text style={styles.progressText}>1,205 / 1,850 kcal consumidas</Text>
+          <Text style={styles.progressText}>{nutritionHint}</Text>
         </View>
 
         {/* ── Card: Rutina del día ── */}
