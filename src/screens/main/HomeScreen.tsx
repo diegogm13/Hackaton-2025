@@ -8,6 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { useUser } from '../../context/UserContext';
 import { GeminiService } from '../../services/GeminiService';
 import { Colors, Spacing } from '../../theme';
@@ -20,6 +22,8 @@ const MACROS = [
 ];
 
 const DIET_PLAN_STORAGE_KEY = '@plan_dieta_generado';
+const EXERCISE_PLAN_STORAGE_KEY = '@plan_ejercicio_generado';
+const EXERCISE_DONE_STORAGE_KEY = '@rutina_done';
 
 type StoredDietPlan = {
   plan_diario: Record<string, unknown>;
@@ -27,6 +31,33 @@ type StoredDietPlan = {
   recomendaciones_personalizadas: string[];
   advertencias_ingredientes: string[];
 };
+
+type StoredExerciseItem = {
+  ejercicio: string;
+  series: number;
+  repeticiones: string;
+  descanso_segundos: number;
+};
+
+type StoredExercisePlan = {
+  rutina_semanal: Record<string, StoredExerciseItem[]>;
+  resumen_volumen_semanal?: string;
+  recomendaciones_personalizadas?: string[];
+};
+
+function stringifyValue(value: unknown): string {
+  if (value === null || value === undefined) return '-';
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => stringifyValue(item)).join(', ');
+  }
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+  return '-';
+}
 
 const buildUserScopedKey = (baseKey: string, userId: string) => `${baseKey}:${userId}`;
 
@@ -68,6 +99,8 @@ export default function HomeScreen() {
   const [iaMsg, setIaMsg] = useState('');
   const [iaLoading, setIaLoading] = useState(false);
   const [dietPlan, setDietPlan] = useState<StoredDietPlan | null>(null);
+  const [exercisePlan, setExercisePlan] = useState<StoredExercisePlan | null>(null);
+  const [routineDoneMap, setRoutineDoneMap] = useState<Record<string, boolean>>({});
 
   const nombre = user?.nombre ?? 'Atleta';
   const peso = user?.peso ?? '--';
@@ -86,28 +119,40 @@ export default function HomeScreen() {
   useEffect(() => {
     if (!user?.id) {
       setDietPlan(null);
+      setExercisePlan(null);
+      setRoutineDoneMap({});
       return;
     }
 
-    const loadStoredDietPlan = async () => {
+    const loadStoredPlans = async () => {
       try {
-        const rawPlan = await AsyncStorage.getItem(
+        const rawDietPlan = await AsyncStorage.getItem(
           buildUserScopedKey(DIET_PLAN_STORAGE_KEY, user.id),
         );
+        const rawExercisePlan = await AsyncStorage.getItem(
+          buildUserScopedKey(EXERCISE_PLAN_STORAGE_KEY, user.id),
+        );
 
-        if (!rawPlan) {
+        if (!rawDietPlan) {
           setDietPlan(null);
-          return;
+        } else {
+          const parsedDiet = JSON.parse(rawDietPlan) as StoredDietPlan;
+          setDietPlan(parsedDiet);
         }
 
-        const parsed = JSON.parse(rawPlan) as StoredDietPlan;
-        setDietPlan(parsed);
+        if (!rawExercisePlan) {
+          setExercisePlan(null);
+        } else {
+          const parsedExercise = JSON.parse(rawExercisePlan) as StoredExercisePlan;
+          setExercisePlan(parsedExercise);
+        }
       } catch {
         setDietPlan(null);
+        setExercisePlan(null);
       }
     };
 
-    loadStoredDietPlan();
+    loadStoredPlans();
   }, [user?.id]);
 
   const caloriesObjective = dietPlan?.resumen_calorico_diario
@@ -134,6 +179,275 @@ export default function HomeScreen() {
 
   const nutritionHint = dietPlan?.recomendaciones_personalizadas?.[0]
     ?? '1,205 / 1,850 kcal consumidas';
+
+  const weekdayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const todayName = weekdayNames[new Date().getDay()];
+  const todayRoutine = exercisePlan?.rutina_semanal?.[todayName] ?? [];
+  const hasRealRoutine = todayRoutine.length > 0;
+  const routineBadge = todayRoutine.length > 0 ? todayName : 'Pecho + Espalda';
+  const routineItems = todayRoutine.length > 0
+    ? todayRoutine.map((item, index) => {
+      const routineId = `${todayName}-${index}-${item.ejercicio}`;
+      return {
+        id: routineId,
+        ejercicio: item.ejercicio,
+        series: `${item.series}x${item.repeticiones}`,
+        peso: `Descanso ${item.descanso_segundos}s`,
+        done: Boolean(routineDoneMap[routineId]),
+      };
+    })
+    : RUTINA.map((item, index) => ({ ...item, id: `mock-${index}-${item.ejercicio}` }));
+
+  useEffect(() => {
+    if (!user?.id || !hasRealRoutine) {
+      setRoutineDoneMap({});
+      return;
+    }
+
+    const loadDoneState = async () => {
+      try {
+        const rawDoneState = await AsyncStorage.getItem(
+          buildUserScopedKey(EXERCISE_DONE_STORAGE_KEY, `${user.id}:${todayName}`),
+        );
+
+        if (!rawDoneState) {
+          setRoutineDoneMap({});
+          return;
+        }
+
+        const parsed = JSON.parse(rawDoneState) as Record<string, boolean>;
+        setRoutineDoneMap(parsed);
+      } catch {
+        setRoutineDoneMap({});
+      }
+    };
+
+    loadDoneState();
+  }, [user?.id, todayName, hasRealRoutine]);
+
+  const toggleRoutineDone = async (routineId: string) => {
+    if (!user?.id || !hasRealRoutine) return;
+
+    const nextState = {
+      ...routineDoneMap,
+      [routineId]: !routineDoneMap[routineId],
+    };
+
+    setRoutineDoneMap(nextState);
+    try {
+      await AsyncStorage.setItem(
+        buildUserScopedKey(EXERCISE_DONE_STORAGE_KEY, `${user.id}:${todayName}`),
+        JSON.stringify(nextState),
+      );
+    } catch {
+      // Si falla la persistencia, mantenemos al menos el estado en memoria.
+    }
+  };
+
+  const handleExportWeeklyPlanPdf = async () => {
+    if (!user) return;
+
+    const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+    const ejercicioHtml = dias.map((dia) => {
+      const ejercicios = exercisePlan?.rutina_semanal?.[dia] ?? [];
+      if (!ejercicios.length) {
+        return `<div class="day-card"><h4>${dia}</h4><p>Sin rutina registrada</p></div>`;
+      }
+
+      const items = ejercicios
+        .map(
+          (item) => `<li><strong>${item.ejercicio}</strong>: ${item.series}x${item.repeticiones} · Descanso ${item.descanso_segundos}s</li>`,
+        )
+        .join('');
+
+      return `<div class="day-card"><h4>${dia}</h4><ul>${items}</ul></div>`;
+    }).join('');
+
+    const dietaHtml = dias.map((dia) => {
+      const planDia = dietPlan?.plan_diario?.[dia.toLowerCase()] ?? dietPlan?.plan_diario?.[dia] ?? null;
+
+      if (!planDia) {
+        return `<div class="day-card"><h4>${dia}</h4><p>Sin plan nutricional registrado</p></div>`;
+      }
+
+      return `<div class="day-card"><h4>${dia}</h4><p>${stringifyValue(planDia)}</p></div>`;
+    }).join('');
+
+    const html = `
+      <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <style>
+          *{box-sizing:border-box}
+          body{
+            font-family:Helvetica,Arial,sans-serif;
+            background:${Colors.bg};
+            color:${Colors.white};
+            padding:28px;
+            margin:0;
+          }
+          .hero{
+            background:linear-gradient(135deg, ${Colors.accentDark}, ${Colors.surface});
+            border:1px solid ${Colors.border};
+            border-radius:16px;
+            padding:18px;
+            margin-bottom:18px;
+          }
+          .title{
+            font-size:30px;
+            font-weight:800;
+            color:${Colors.accent};
+            letter-spacing:0.4px;
+            margin-bottom:4px;
+          }
+          .subtitle{
+            font-size:13px;
+            color:${Colors.textLabel};
+          }
+          .meta-row{
+            margin-top:12px;
+            display:flex;
+            gap:8px;
+            flex-wrap:wrap;
+          }
+          .pill{
+            display:inline-block;
+            background:${Colors.bg};
+            color:${Colors.textLabel};
+            border:1px solid ${Colors.border};
+            border-radius:999px;
+            padding:6px 10px;
+            font-size:11px;
+            font-weight:600;
+          }
+          .kpis{
+            display:flex;
+            gap:10px;
+            margin-bottom:18px;
+          }
+          .kpi{
+            flex:1;
+            background:${Colors.surface};
+            border:1px solid ${Colors.border};
+            border-radius:12px;
+            padding:12px;
+          }
+          .kpi-label{
+            font-size:11px;
+            color:${Colors.textSecondary};
+            text-transform:uppercase;
+            letter-spacing:0.8px;
+          }
+          .kpi-value{
+            margin-top:6px;
+            font-size:22px;
+            color:${Colors.accent};
+            font-weight:800;
+          }
+          .section{
+            margin-top:14px;
+            background:${Colors.surface};
+            border:1px solid ${Colors.border};
+            border-radius:14px;
+            padding:14px;
+          }
+          .section h3{
+            margin:0 0 10px 0;
+            color:${Colors.white};
+            font-size:15px;
+          }
+          .section-sub{
+            font-size:12px;
+            color:${Colors.textSecondary};
+            margin-bottom:10px;
+            line-height:1.5;
+          }
+          .day-card{
+            background:${Colors.bg};
+            border:1px solid ${Colors.border};
+            border-radius:10px;
+            padding:10px;
+            margin-bottom:10px;
+          }
+          .day-card h4{
+            margin:0 0 8px 0;
+            color:${Colors.accent};
+            font-size:13px;
+          }
+          .day-card p,.day-card li{
+            font-size:12px;
+            color:${Colors.textLabel};
+            line-height:1.5;
+          }
+          ul{
+            padding-left:18px;
+            margin:0;
+          }
+          .footer{
+            margin-top:18px;
+            text-align:center;
+            font-size:11px;
+            color:${Colors.placeholder};
+          }
+        </style>
+      </head>
+      <body>
+        <div class="hero">
+          <div class="title">Plan Semanal Holos</div>
+          <div class="subtitle">Resumen personalizado de entrenamiento y nutrición</div>
+          <div class="meta-row">
+            <span class="pill">Usuario: ${user.nombre}</span>
+            <span class="pill">Fecha: ${new Date().toLocaleDateString()}</span>
+          </div>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi">
+            <div class="kpi-label">Calorías objetivo</div>
+            <div class="kpi-value">${dietPlan?.resumen_calorico_diario ?? '-'}</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Recomendaciones</div>
+            <div class="kpi-value">${(dietPlan?.recomendaciones_personalizadas ?? []).length}</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Advertencias</div>
+            <div class="kpi-value">${(dietPlan?.advertencias_ingredientes ?? []).length}</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Resumen nutricional</h3>
+          <div class="section-sub">Recomendaciones: ${(dietPlan?.recomendaciones_personalizadas ?? []).join(' | ') || '-'}</div>
+          <div class="section-sub">Advertencias: ${(dietPlan?.advertencias_ingredientes ?? []).join(' | ') || '-'}</div>
+        </div>
+
+        <div class="section">
+          <h3>Rutina de ejercicio semanal</h3>
+          ${ejercicioHtml}
+        </div>
+
+        <div class="section">
+          <h3>Plan de dieta semanal</h3>
+          ${dietaHtml}
+        </div>
+
+        <div class="footer">Holos · Generado automáticamente</div>
+      </body>
+      </html>
+    `;
+
+    try {
+      const { uri } = await Print.printToFileAsync({ html });
+      await Sharing.shareAsync(uri, {
+        UTI: '.pdf',
+        mimeType: 'application/pdf',
+      });
+    } catch {
+      // Si no se puede compartir, evitamos romper la pantalla.
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -218,10 +532,16 @@ export default function HomeScreen() {
         <View style={styles.card}>
           <View style={styles.cardRowHeader}>
             <Text style={styles.cardTitle}>Rutina de hoy</Text>
-            <Text style={styles.cardBadge}>Pecho + Espalda</Text>
+            <Text style={styles.cardBadge}>{routineBadge}</Text>
           </View>
-          {RUTINA.map((r) => (
-            <View key={r.ejercicio} style={styles.ejercicioRow}>
+          {routineItems.map((r) => (
+            <TouchableOpacity
+              key={r.id}
+              style={styles.ejercicioRow}
+              onPress={() => toggleRoutineDone(r.id)}
+              disabled={!hasRealRoutine}
+              activeOpacity={0.8}
+            >
               <View style={[styles.doneCircle, r.done && styles.doneCircleActive]}>
                 {r.done && <Ionicons name="checkmark" size={14} color={Colors.bg} />}
               </View>
@@ -231,7 +551,7 @@ export default function HomeScreen() {
                 </Text>
                 <Text style={styles.ejercicioSub}>{r.series} · {r.peso}</Text>
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
 
@@ -241,7 +561,7 @@ export default function HomeScreen() {
             <Ionicons name="mic" size={22} color={Colors.accent} />
             <Text style={styles.quickText}>Preguntarle a la IA</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.quickBtn}>
+          <TouchableOpacity style={styles.quickBtn} onPress={handleExportWeeklyPlanPdf}>
             <Ionicons name="document-text-outline" size={22} color={Colors.accent} />
             <Text style={styles.quickText}>Ver plan semanal</Text>
           </TouchableOpacity>
