@@ -60,7 +60,7 @@ type RegisterResponse = {
 };
 
 const api = axios.create({
-  baseURL: process.env.API_URL ?? 'http://10.0.2.2:3000',
+  baseURL: 'https://resources-services.onrender.com/',
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',

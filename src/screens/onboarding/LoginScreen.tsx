@@ -27,18 +27,32 @@ export default function LoginScreen({ navigation }: Props) {
   const { setUser } = useUser();
 
   const handleLogin = async () => {
-    if (!email.trim() || !password) { setError('Completa todos los campos'); return; }
+    if (loading) return;
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !password) { setError('Completa todos los campos'); return; }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) { setError('Ingresa un correo electrónico válido'); return; }
+    if (!emailRegex.test(normalizedEmail)) { setError('Ingresa un correo electrónico válido'); return; }
+
     setError('');
     setLoading(true);
-    const result = await AuthService.login(email, password);
-    setLoading(false);
-    if (!result.success) { setError(result.error ?? 'Error al iniciar sesión'); return; }
-    setUser(result.user!);
-    rootNav.dispatch(
-      CommonActions.reset({ index: 0, routes: [{ name: 'MainApp' }] })
-    );
+
+    try {
+      const result = await AuthService.login(normalizedEmail, password);
+      if (!result.success || !result.user) {
+        setError(result.error ?? 'Error al iniciar sesión');
+        return;
+      }
+
+      setUser(result.user);
+      rootNav.dispatch(
+        CommonActions.reset({ index: 0, routes: [{ name: 'MainApp' }] })
+      );
+    } catch (err: any) {
+      setError(err?.message ?? 'No se pudo conectar con el servidor');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
