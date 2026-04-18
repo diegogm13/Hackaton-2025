@@ -81,4 +81,16 @@ export const GeminiService = {
   isReady(): boolean {
     return chatSession !== null;
   },
+
+  async getHomeSummary(user: UserProfile): Promise<string> {
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+    const prompt = `Eres un coach de fitness. Basado en este perfil genera un mensaje motivacional de MÁXIMO 2 líneas, en español, que incluya una estimación de semanas hasta el objetivo. Sé directo y cálido, usa el nombre.
+
+Perfil: Nombre=${user.nombre}, Objetivo=${PLAN_LABELS[user.plan ?? 2]}, Peso=${user.peso || '?'}kg, Grasa=${user.grasa || '?'}%, Músculo=${user.musculo || '?'}%, Entrenamiento=${RUTINA_LABELS[user.rutina ?? 1]}.
+
+Formato: Solo el mensaje, sin introducción, sin comillas.`;
+    const result = await model.generateContent(prompt);
+    return result.response.text().trim();
+  },
 };

@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, SafeAreaView,
+  StyleSheet, SafeAreaView, Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useUser } from '../../context/UserContext';
+import { GeminiService } from '../../services/GeminiService';
 import { Colors, Spacing } from '../../theme';
 import Monito from '../../components/Monito';
 
@@ -21,25 +24,90 @@ const RUTINA = [
   { ejercicio: 'Remo con barra', series: '4x10', peso: '55 kg', done: false },
 ];
 
+function greeting(): string {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return 'Buenos días 👋';
+  if (h >= 12 && h < 20) return 'Buenas tardes 👋';
+  return 'Buenas noches 👋';
+}
+
+function SkeletonLine({ width, height = 14 }: { width: string | number; height?: number }) {
+  const opacity = useRef(new Animated.Value(0.3)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 0.8, duration: 700, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.3, duration: 700, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+  return (
+    <Animated.View style={{
+      width, height, borderRadius: 6,
+      backgroundColor: Colors.border, opacity,
+    }} />
+  );
+}
+
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
+  const { user } = useUser();
+  const [iaMsg, setIaMsg] = useState('');
+  const [iaLoading, setIaLoading] = useState(false);
+
+  const nombre = user?.nombre ?? 'Atleta';
+  const peso = user?.peso ?? '--';
+  const grasa = parseFloat(user?.grasa ?? '') || 22;
+  const musculo = parseFloat(user?.musculo ?? '') || 38;
+
+  useEffect(() => {
+    if (!user) return;
+    setIaLoading(true);
+    GeminiService.getHomeSummary(user)
+      .then(msg => setIaMsg(msg))
+      .catch(() => setIaMsg(`¡Hola ${nombre}! Sigue tu plan de hoy y mantén la constancia. Cada sesión te acerca a tu objetivo.`))
+      .finally(() => setIaLoading(false));
+  }, [user?.id]);
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
-        {/* Header */}
+        {/* ── Header ── */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Buenos días 👋</Text>
-            <Text style={styles.name}>Diego</Text>
+            <Text style={styles.greeting}>{greeting()}</Text>
+            <Text style={styles.name}>{nombre}</Text>
           </View>
           <TouchableOpacity style={styles.notifBtn}>
             <Ionicons name="notifications-outline" size={24} color={Colors.white} />
           </TouchableOpacity>
         </View>
 
-        {/* ── Card: Monito (progreso físico general) ── */}
+        {/* ── Card: Mensaje motivacional de la IA ── */}
+        <LinearGradient
+          colors={['#0D2E17', '#0A1F10']}
+          style={styles.iaCard}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        >
+          <View style={styles.iaCardHeader}>
+            <View style={styles.iaDot} />
+            <Text style={styles.iaCardLabel}>FitAI · Mensaje del día</Text>
+          </View>
+          {iaLoading ? (
+            <View style={{ gap: 8 }}>
+              <SkeletonLine width="92%" />
+              <SkeletonLine width="75%" />
+            </View>
+          ) : (
+            <Text style={styles.iaMessage}>{iaMsg}</Text>
+          )}
+          <TouchableOpacity onPress={() => navigation.navigate('ChatIA')} style={styles.iaChatLink}>
+            <Text style={styles.iaChatLinkText}>Preguntarle más →</Text>
+          </TouchableOpacity>
+        </LinearGradient>
+
+        {/* ── Card: Monito (progreso físico) ── */}
         <TouchableOpacity
           style={styles.monitoCard}
           onPress={() => navigation.navigate('FisicoDetalle')}
@@ -52,13 +120,13 @@ export default function HomeScreen() {
           <View style={styles.monitoRow}>
             <View style={styles.monitoInfo}>
               <Text style={styles.monitoStatLabel}>Peso actual</Text>
-              <Text style={styles.monitoStatValue}>72 kg</Text>
+              <Text style={styles.monitoStatValue}>{peso} kg</Text>
               <Text style={styles.monitoStatLabel}>Grasa</Text>
-              <Text style={styles.monitoStatValue}>22%</Text>
+              <Text style={styles.monitoStatValue}>{user?.grasa ?? '22'}%</Text>
               <Text style={styles.monitoStatLabel}>Músculo</Text>
-              <Text style={styles.monitoStatValue}>38%</Text>
+              <Text style={styles.monitoStatValue}>{user?.musculo ?? '38'}%</Text>
             </View>
-            <Monito size={120} grasa={22} musculo={38} color={Colors.accent} />
+            <Monito size={120} grasa={grasa} musculo={musculo} color={Colors.accent} />
           </View>
         </TouchableOpacity>
 
@@ -121,10 +189,27 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.bg },
   container: { paddingHorizontal: Spacing.screen, paddingBottom: 24 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 20, marginBottom: 24 },
+
+  header: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', paddingTop: 20, marginBottom: 20,
+  },
   greeting: { fontSize: 14, color: Colors.textSecondary },
   name: { fontSize: 26, fontWeight: '800', color: Colors.white },
   notifBtn: { padding: 8, backgroundColor: Colors.surface, borderRadius: 12 },
+
+  // IA message card
+  iaCard: {
+    borderRadius: Spacing.cardRadius,
+    borderWidth: 1, borderColor: '#1A4D2A',
+    padding: 18, marginBottom: 16, gap: 10,
+  },
+  iaCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  iaDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.accent },
+  iaCardLabel: { fontSize: 11, fontWeight: '700', color: Colors.accent, letterSpacing: 0.5 },
+  iaMessage: { fontSize: 14, color: Colors.white, lineHeight: 22, fontWeight: '500' },
+  iaChatLink: { alignSelf: 'flex-start' },
+  iaChatLinkText: { fontSize: 13, color: Colors.accent, fontWeight: '700' },
 
   monitoCard: {
     backgroundColor: Colors.surface,
@@ -146,7 +231,10 @@ const styles = StyleSheet.create({
     padding: 18, marginBottom: 16,
   },
   cardTitle: { fontSize: 16, fontWeight: '700', color: Colors.white, marginBottom: 16 },
-  cardRowHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  cardRowHeader: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', marginBottom: 16,
+  },
   cardBadge: {
     fontSize: 11, fontWeight: '700', color: Colors.accent,
     backgroundColor: Colors.accentDark, paddingHorizontal: 10, paddingVertical: 4,
