@@ -23,7 +23,7 @@ export default function DatosEstiloVidaScreen({ navigation }: Props) {
 
   const RUTINAS = ['Nunca', '1-2x/sem', '3-4x/sem', '5+/sem'];
   const DISPONIBILIDAD = ['30 min', '1 hora', '2 horas', 'Flexible'];
-  const DIETAS = ['Omnívoro', 'Vegano', 'Vegetariano', 'Keto'];
+  const DIETAS = ['Omnívoro', 'Vegano', 'Vegetariano', 'Keto', 'Mediterranea'];
   const HABITOS = ['Consume alcohol', 'Fuma tabaco'];
 
   const toggleHabito = (i: number) => {
