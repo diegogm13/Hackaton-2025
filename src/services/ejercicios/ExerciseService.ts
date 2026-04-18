@@ -75,6 +75,43 @@ export function mapearOnboardingAEjercicio(
     };
 }
 
+function normalizarPlanEjercicio(data: RespuestaPlanEjercicioDto): RespuestaPlanEjercicioDto {
+    const nombres = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+    const rutinaOriginal = data.plan_generado.rutina_semanal;
+    const rutinaLimpia: Record<string, any> = {};
+
+    Object.keys(rutinaOriginal).forEach((key, index) => {
+        // Si el backend envía dia_1, usamos Lunes. Si envía algo desconocido, mantenemos la key.
+        const label = nombres[index] || key;
+        rutinaLimpia[label] = rutinaOriginal[key];
+    });
+
+    return {
+        ...data,
+        plan_generado: {
+            ...data.plan_generado,
+            rutina_semanal: rutinaLimpia
+        }
+    };
+}
+
+export async function obtenerPlanEjercicioPorUsuario(
+    userId: string,
+    token?: string
+): Promise<RespuestaPlanEjercicioDto> {
+    try {
+        const response = await api.get<RespuestaPlanEjercicioDto>(
+            `/rest/exercise-plan/usuario/${userId}`,
+            { headers: token ? { Authorization: `Bearer ${token}` } : undefined }
+        );
+
+        // Normalizamos la respuesta antes de entregarla al componente
+        return normalizarPlanEjercicio(response.data);
+    } catch (error) {
+        throw toApiError(error);
+    }
+}
+
 export async function generarPlanEjercicioDesdeOnboarding(
     source: FuenteOnboardingEjercicio,
     token?: string,
