@@ -4,6 +4,7 @@ import {
   StyleSheet, SafeAreaView, KeyboardAvoidingView,
   Platform, ScrollView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { AuthStackParamList, RootStackParamList } from '../../navigation';
@@ -16,6 +17,7 @@ type Props = {
 export default function LoginScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const rootNav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const handleLogin = () => {
@@ -48,14 +50,26 @@ export default function LoginScreen({ navigation }: Props) {
               keyboardType="email-address"
               autoCapitalize="none"
             />
-            <TextInput
-              style={styles.input}
-              placeholder="Contraseña"
-              placeholderTextColor={Colors.placeholder}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
+            <View style={styles.passwordWrap}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Contraseña"
+                placeholderTextColor={Colors.placeholder}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity
+                style={styles.eyeBtn}
+                onPress={() => setShowPassword(v => !v)}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye' : 'eye-off'}
+                  size={20}
+                  color={showPassword ? Colors.accent : Colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
 
             <TouchableOpacity style={styles.forgotWrap}>
               <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
@@ -110,6 +124,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     color: Colors.white, fontSize: 15,
   },
+  passwordWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderRadius: Spacing.fieldRadius,
+    borderWidth: 1, borderColor: Colors.border,
+    height: Spacing.fieldHeight,
+    paddingHorizontal: 20,
+  },
+  passwordInput: { flex: 1, color: Colors.white, fontSize: 15 },
+  eyeBtn: { padding: 4 },
   forgotWrap: { alignSelf: 'flex-end', marginTop: -4 },
   forgotText: { color: Colors.accent, fontSize: 13 },
   primaryBtn: {

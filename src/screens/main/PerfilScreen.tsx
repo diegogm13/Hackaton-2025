@@ -4,6 +4,11 @@ import {
   StyleSheet, SafeAreaView, ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, CommonActions } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { RootStackParamList } from '../../navigation';
+import { useOnboarding } from '../../context/OnboardingContext';
 import { Colors, Spacing } from '../../theme';
 import Monito from '../../components/Monito';
 
@@ -24,6 +29,17 @@ const AJUSTES = [
 ];
 
 export default function PerfilScreen() {
+  const rootNav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { resetData } = useOnboarding();
+
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem('hasCompletedOnboarding');
+    resetData();
+    rootNav.dispatch(
+      CommonActions.reset({ index: 0, routes: [{ name: 'Auth' }] })
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
@@ -103,7 +119,7 @@ export default function PerfilScreen() {
         </View>
 
         {/* Cerrar sesión */}
-        <TouchableOpacity style={styles.logoutBtn}>
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
           <Text style={styles.logoutText}>Cerrar sesión</Text>
         </TouchableOpacity>
 

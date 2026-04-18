@@ -19,6 +19,7 @@ export type OnboardingData = {
 type OnboardingContextType = {
   data: Partial<OnboardingData>;
   updateData: (partial: Partial<OnboardingData>) => void;
+  resetData: () => void;
 };
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
@@ -30,8 +31,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     setData(prev => ({ ...prev, ...partial }));
   };
 
+  const resetData = () => setData({});
+
   return (
-    <OnboardingContext.Provider value={{ data, updateData }}>
+    <OnboardingContext.Provider value={{ data, updateData, resetData }}>
       {children}
     </OnboardingContext.Provider>
   );

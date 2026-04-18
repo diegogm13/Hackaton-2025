@@ -4,6 +4,7 @@ import {
   StyleSheet, SafeAreaView, KeyboardAvoidingView,
   Platform, ScrollView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { AuthStackParamList, RootStackParamList } from '../../navigation';
@@ -19,6 +20,8 @@ export default function RegistroScreen({ navigation }: Props) {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [aceptaTerminos, setAceptaTerminos] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const rootNav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const handleRegistro = () => {
@@ -45,12 +48,40 @@ export default function RegistroScreen({ navigation }: Props) {
             <TextInput style={styles.input} placeholder="Correo electrónico"
               placeholderTextColor={Colors.placeholder} value={email} onChangeText={setEmail}
               keyboardType="email-address" autoCapitalize="none" />
-            <TextInput style={styles.input} placeholder="Contraseña"
-              placeholderTextColor={Colors.placeholder} value={password} onChangeText={setPassword}
-              secureTextEntry />
-            <TextInput style={styles.input} placeholder="Confirmar contraseña"
-              placeholderTextColor={Colors.placeholder} value={confirm} onChangeText={setConfirm}
-              secureTextEntry />
+            <View style={styles.passwordWrap}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Contraseña"
+                placeholderTextColor={Colors.placeholder}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowPassword(v => !v)}>
+                <Ionicons
+                  name={showPassword ? 'eye' : 'eye-off'}
+                  size={20}
+                  color={showPassword ? Colors.accent : Colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.passwordWrap}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Confirmar contraseña"
+                placeholderTextColor={Colors.placeholder}
+                value={confirm}
+                onChangeText={setConfirm}
+                secureTextEntry={!showConfirm}
+              />
+              <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowConfirm(v => !v)}>
+                <Ionicons
+                  name={showConfirm ? 'eye' : 'eye-off'}
+                  size={20}
+                  color={showConfirm ? Colors.accent : Colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
 
             <TouchableOpacity style={styles.termsRow} onPress={() => setAceptaTerminos(!aceptaTerminos)}>
               <View style={[styles.checkbox, aceptaTerminos && styles.checkboxActive]}>
@@ -93,6 +124,17 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: Colors.border,
     paddingHorizontal: 20, color: Colors.white, fontSize: 15,
   },
+  passwordWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderRadius: Spacing.fieldRadius,
+    borderWidth: 1, borderColor: Colors.border,
+    height: Spacing.fieldHeight,
+    paddingHorizontal: 20,
+  },
+  passwordInput: { flex: 1, color: Colors.white, fontSize: 15 },
+  eyeBtn: { padding: 4 },
   termsRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
   checkbox: {
     width: 20, height: 20, borderRadius: 4,
