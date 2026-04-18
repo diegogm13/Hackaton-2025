@@ -7,6 +7,10 @@ export type UserProfile = {
   password: string;
   // Personalizacion
   plan: number; // 0: Ejercicio, 1: Nutricional, 2: Completo
+  metaEjercicio: number;
+  lugarEntrenamiento: number;
+  metaNutricional: number;
+  controlCalorias: number;
   // DatosEstadisticos
   altura: string;
   peso: string;
@@ -21,7 +25,10 @@ export type UserProfile = {
   alergias: string;
   // DatosSalud
   togglesSalud: boolean[];
-  condicionesSalud: string;
+  condicionesMedicas: string[];
+  medicamentos: string[];
+  // ObjetivoDieta
+  objetivoDieta: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -50,11 +57,29 @@ export const AuthService = {
   ): Promise<{ success: boolean; user?: UserProfile; error?: string }> {
     await delay();
     const users = await getUsers();
-    const user = users.find(
-      u => u.email.toLowerCase() === email.toLowerCase() && u.password === password,
-    );
-    if (!user) return { success: false, error: 'Correo o contraseña incorrectos' };
+    // Buscar por email exacto primero
+    let user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    // Si no existe, crear usuario de prueba con ese correo
+    if (!user) {
+      user = {
+        id: generateId(),
+        nombre: email.split('@')[0],
+        email: email.toLowerCase(),
+        password,
+        plan: 2, metaEjercicio: 0, lugarEntrenamiento: 0, metaNutricional: 0, controlCalorias: 0,
+        altura: '170', peso: '70', musculo: '40', grasa: '20', etnia: 'Latina',
+        rutina: 1, disponibilidad: 1, dieta: 0,
+        habitos: [false, false, false], alergias: '',
+        togglesSalud: [false, false, false, false],
+        condicionesMedicas: [], medicamentos: [], objetivoDieta: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      users.push(user);
+      await saveUsers(users);
+    }
     await AsyncStorage.setItem(CURRENT_USER_KEY, user.id);
+    await AsyncStorage.setItem('hasCompletedOnboarding', 'true');
     return { success: true, user };
   },
 
@@ -63,16 +88,19 @@ export const AuthService = {
   ): Promise<{ success: boolean; user?: UserProfile; error?: string }> {
     await delay();
     const users = await getUsers();
-    const exists = users.some(u => u.email.toLowerCase() === userData.email.toLowerCase());
-    if (exists) return { success: false, error: 'Este correo ya está registrado' };
-
+    // Si ya existe ese correo, sobreescribir para permitir pruebas
+    const existingIndex = users.findIndex(u => u.email.toLowerCase() === userData.email.toLowerCase());
     const newUser: UserProfile = {
       ...userData,
-      id: generateId(),
-      createdAt: new Date().toISOString(),
+      id: existingIndex >= 0 ? users[existingIndex].id : generateId(),
+      createdAt: existingIndex >= 0 ? users[existingIndex].createdAt : new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    users.push(newUser);
+    if (existingIndex >= 0) {
+      users[existingIndex] = newUser;
+    } else {
+      users.push(newUser);
+    }
     await saveUsers(users);
     await AsyncStorage.setItem(CURRENT_USER_KEY, newUser.id);
     return { success: true, user: newUser };

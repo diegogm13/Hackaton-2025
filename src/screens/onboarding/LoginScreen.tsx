@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView,
-  Platform, ScrollView,
+  Platform, ScrollView, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -47,12 +47,10 @@ export default function LoginScreen({ navigation }: Props) {
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
 
           <View style={styles.logoWrap}>
-            <View style={styles.logoCircle}>
-              <Text style={styles.logoText}>FIT</Text>
-            </View>
+            <Image source={require('../../../assets/icon.png')} style={styles.logoImg} resizeMode="contain" />
           </View>
 
-          <Text style={styles.appTitle}>FitAI</Text>
+          <Text style={styles.appTitle}>Holos</Text>
           <Text style={styles.appSubtitle}>Tu entrenador personal con IA</Text>
 
           <View style={styles.form}>
@@ -129,13 +127,8 @@ export default function LoginScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.bg },
   container: { flexGrow: 1, alignItems: 'center', paddingHorizontal: Spacing.screen, paddingBottom: 40 },
-  logoWrap: { marginTop: 60, marginBottom: 16 },
-  logoCircle: {
-    width: 80, height: 80, borderRadius: 40,
-    backgroundColor: Colors.accent,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  logoText: { fontSize: 22, fontWeight: '800', color: Colors.bg },
+  logoWrap: { marginTop: 60, marginBottom: 16, alignItems: 'center' },
+  logoImg: { width: 110, height: 110, borderRadius: 24 },
   appTitle: { fontSize: 32, fontWeight: '800', color: Colors.white, marginBottom: 6 },
   appSubtitle: { fontSize: 14, color: Colors.textSecondary, marginBottom: 40 },
   form: { width: '100%', gap: 14 },

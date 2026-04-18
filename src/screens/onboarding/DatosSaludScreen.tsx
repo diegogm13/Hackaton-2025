@@ -1,82 +1,45 @@
 import React, { useState } from 'react';
-import {
-  View, Text, TextInput, TouchableOpacity,
-  StyleSheet, ScrollView, ActivityIndicator, Alert,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation, CommonActions } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { OnboardingStackParamList, RootStackParamList } from '../../navigation';
+import { OnboardingStackParamList } from '../../navigation';
 import { useOnboarding } from '../../context/OnboardingContext';
-import { AuthService } from '../../services/AuthService';
-import { useUser } from '../../context/UserContext';
 import { Colors, Spacing } from '../../theme';
 
 type Props = {
   navigation: NativeStackNavigationProp<OnboardingStackParamList, 'DatosSalud'>;
 };
 
-const PREGUNTAS = [
-  '¿Tienes enfermedades crónicas?',
-  '¿Tienes condiciones psicológicas?',
-  '¿Tienes alguna discapacidad física?',
-  '¿Estás en período reproductivo activo?',
+const CONDICIONES_MEDICAS = [
+  'Hipotiroidismo',
+  'Hipertensión',
+  'Síndrome de intestino irritable',
+  'Enfermedad renal crónica',
+  'Gota',
+  'Diabetes tipo 2',
+  'Síndrome de ovario poliquístico',
+];
+
+const MEDICAMENTOS = [
+  'Anticoagulantes',
+  'Estatinas',
+  'Diuréticos ahorradores de potasio',
 ];
 
 export default function DatosSaludScreen({ navigation }: Props) {
-  const [toggles, setToggles] = useState<boolean[]>([false, false, false, false]);
-  const [condiciones, setCondiciones] = useState('');
-  const [saving, setSaving] = useState(false);
-  const { data, updateData, resetData } = useOnboarding();
-  const { setUser } = useUser();
-  const rootNav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [condiciones, setCondiciones] = useState<string[]>([]);
+  const [medicamentos, setMedicamentos] = useState<string[]>([]);
+  const { updateData } = useOnboarding();
 
-  const toggle = (i: number) => {
-    const next = [...toggles];
-    next[i] = !next[i];
-    setToggles(next);
-  };
+  const toggleCondicion = (item: string) =>
+    setCondiciones(prev => prev.includes(item) ? prev.filter(c => c !== item) : [...prev, item]);
 
-  const handleFinish = async () => {
-    setSaving(true);
-    try {
-      const result = await AuthService.register({
-        nombre: data.nombre ?? '',
-        email: data.email ?? '',
-        password: data.password ?? '',
-        plan: data.plan ?? 2,
-        altura: data.altura ?? '',
-        peso: data.peso ?? '',
-        musculo: data.musculo ?? '',
-        grasa: data.grasa ?? '',
-        etnia: data.etnia ?? '',
-        rutina: data.rutina ?? 1,
-        disponibilidad: data.disponibilidad ?? 1,
-        dieta: data.dieta ?? 0,
-        habitos: data.habitos ?? [false, false, false],
-        alergias: data.alergias ?? '',
-        togglesSalud: toggles,
-        condicionesSalud: condiciones,
-      });
+  const toggleMedicamento = (item: string) =>
+    setMedicamentos(prev => prev.includes(item) ? prev.filter(m => m !== item) : [...prev, item]);
 
-      if (!result.success) {
-        setSaving(false);
-        Alert.alert('Error', result.error ?? 'No se pudo crear la cuenta. Intenta de nuevo.');
-        return;
-      }
-
-      setUser(result.user!);
-      await AsyncStorage.setItem('hasCompletedOnboarding', 'true');
-      resetData();
-
-      rootNav.dispatch(
-        CommonActions.reset({ index: 0, routes: [{ name: 'MainApp' }] })
-      );
-    } catch (e: any) {
-      setSaving(false);
-      Alert.alert('Error', e?.message ?? 'Ocurrió un error inesperado. Intenta de nuevo.');
-    }
+  const handleNext = () => {
+    updateData({ condicionesMedicas: condiciones, medicamentos });
+    navigation.navigate('ObjetivoDieta');
   };
 
   return (
@@ -87,47 +50,46 @@ export default function DatosSaludScreen({ navigation }: Props) {
           <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
 
-        <Text style={styles.stepText}>Paso 4 de 4</Text>
+        <Text style={styles.stepText}>Paso 6 de 7</Text>
         <View style={styles.progressBg}>
-          <View style={[styles.progressFill, { width: '100%' }]} />
+          <View style={[styles.progressFill, { width: '86%' }]} />
         </View>
 
         <Text style={styles.title}>Historial de Salud</Text>
         <Text style={styles.subtitle}>Para personalizar tu plan de forma segura</Text>
 
-        <View style={styles.questions}>
-          {PREGUNTAS.map((q, i) => (
-            <View key={q} style={styles.card}>
-              <Text style={styles.question}>{q}</Text>
-              <TouchableOpacity style={styles.toggleWrap} onPress={() => toggle(i)}>
-                <View style={[styles.toggleBg, toggles[i] && styles.toggleActive]}>
-                  <View style={[styles.toggleDot, toggles[i] && styles.toggleDotActive]} />
-                </View>
-              </TouchableOpacity>
-            </View>
+        {/* Condiciones médicas */}
+        <Text style={styles.sectionTitle}>Condiciones Médicas</Text>
+        <Text style={styles.sectionSubtitle}>Selecciona las que apliquen</Text>
+        <View style={styles.chipsWrap}>
+          {CONDICIONES_MEDICAS.map(item => (
+            <TouchableOpacity
+              key={item}
+              style={[styles.chip, condiciones.includes(item) && styles.chipActive]}
+              onPress={() => toggleCondicion(item)}
+            >
+              <Text style={[styles.chipText, condiciones.includes(item) && styles.chipTextActive]}>{item}</Text>
+            </TouchableOpacity>
           ))}
         </View>
 
-        <Text style={styles.fieldLabel}>Detalla tus condiciones (opcional)</Text>
-        <TextInput
-          style={styles.textArea}
-          placeholder="Ej. diabetes tipo 2, hipertensión..."
-          placeholderTextColor={Colors.placeholder}
-          value={condiciones}
-          onChangeText={setCondiciones}
-          multiline
-          numberOfLines={4}
-        />
+        {/* Medicamentos */}
+        <Text style={styles.sectionTitle}>Interacciones con Medicamentos</Text>
+        <Text style={styles.sectionSubtitle}>Selecciona los que tomas</Text>
+        <View style={styles.chipsWrap}>
+          {MEDICAMENTOS.map(item => (
+            <TouchableOpacity
+              key={item}
+              style={[styles.chip, medicamentos.includes(item) && styles.chipActive]}
+              onPress={() => toggleMedicamento(item)}
+            >
+              <Text style={[styles.chipText, medicamentos.includes(item) && styles.chipTextActive]}>{item}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-        <TouchableOpacity
-          style={[styles.btn, saving && styles.btnDisabled]}
-          onPress={handleFinish}
-          disabled={saving}
-        >
-          {saving
-            ? <ActivityIndicator color={Colors.bg} />
-            : <Text style={styles.btnText}>Comenzar mi plan ✓</Text>
-          }
+        <TouchableOpacity style={styles.btn} onPress={handleNext}>
+          <Text style={styles.btnText}>Siguiente →</Text>
         </TouchableOpacity>
 
       </ScrollView>
@@ -145,34 +107,13 @@ const styles = StyleSheet.create({
   progressFill: { height: 6, backgroundColor: Colors.accent, borderRadius: 3 },
   title: { fontSize: 26, fontWeight: '800', color: Colors.white, marginBottom: 6 },
   subtitle: { fontSize: 14, color: Colors.textSecondary, marginBottom: 24 },
-  questions: { gap: 12, marginBottom: 24 },
-  card: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: Colors.surface, borderRadius: 12, padding: 16,
-  },
-  question: { fontSize: 13, fontWeight: '600', color: Colors.textLabel, flex: 1, marginRight: 12 },
-  toggleWrap: { padding: 4 },
-  toggleBg: {
-    width: 44, height: 24, borderRadius: 12,
-    backgroundColor: Colors.toggleOff,
-    justifyContent: 'center', padding: 3,
-  },
-  toggleActive: { backgroundColor: Colors.accent },
-  toggleDot: { width: 18, height: 18, borderRadius: 9, backgroundColor: Colors.white },
-  toggleDotActive: { alignSelf: 'flex-end' },
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: Colors.textLabel, marginBottom: 8 },
-  textArea: {
-    backgroundColor: Colors.surface,
-    borderRadius: 12, borderWidth: 1, borderColor: Colors.border,
-    padding: 16, color: Colors.white, fontSize: 14,
-    height: 100, textAlignVertical: 'top', marginBottom: 24,
-  },
-  btn: {
-    height: Spacing.buttonHeight,
-    backgroundColor: Colors.accent,
-    borderRadius: Spacing.buttonRadius,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  btnDisabled: { opacity: 0.6 },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: Colors.white, marginBottom: 4 },
+  sectionSubtitle: { fontSize: 12, color: Colors.textSecondary, marginBottom: 12 },
+  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 28 },
+  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface },
+  chipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
+  chipText: { fontSize: 13, color: Colors.textSecondary, fontWeight: '600' },
+  chipTextActive: { color: Colors.bg },
+  btn: { height: Spacing.buttonHeight, backgroundColor: Colors.accent, borderRadius: Spacing.buttonRadius, alignItems: 'center', justifyContent: 'center' },
   btnText: { fontSize: 16, fontWeight: '800', color: Colors.bg },
 });

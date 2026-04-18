@@ -7,6 +7,10 @@ export type OnboardingData = {
   password: string;
   // Personalizacion
   plan: number;
+  metaEjercicio: number;
+  lugarEntrenamiento: number;
+  metaNutricional: number;
+  controlCalorias: number;
   // DatosEstadisticos
   altura: string;
   peso: string;
@@ -21,7 +25,10 @@ export type OnboardingData = {
   alergias: string;
   // DatosSalud
   togglesSalud: boolean[];
-  condicionesSalud: string;
+  condicionesMedicas: string[];
+  medicamentos: string[];
+  // ObjetivoDieta
+  objetivoDieta: number;
 };
 
 type OnboardingContextType = {

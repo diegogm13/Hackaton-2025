@@ -13,6 +13,9 @@ import PersonalizacionScreen from '../screens/onboarding/PersonalizacionScreen';
 import DatosEstadisticosScreen from '../screens/onboarding/DatosEstadisticosScreen';
 import DatosEstiloVidaScreen from '../screens/onboarding/DatosEstiloVidaScreen';
 import DatosSaludScreen from '../screens/onboarding/DatosSaludScreen';
+import ObjetivoDietaScreen from '../screens/onboarding/ObjetivoDietaScreen';
+import PreguntasEjercicioScreen from '../screens/onboarding/PreguntasEjercicioScreen';
+import PreguntasNutricionScreen from '../screens/onboarding/PreguntasNutricionScreen';
 import HomeScreen from '../screens/main/HomeScreen';
 import ChatIAScreen from '../screens/main/ChatIAScreen';
 import PerfilScreen from '../screens/main/PerfilScreen';
@@ -33,9 +36,12 @@ export type AuthStackParamList = {
 
 export type OnboardingStackParamList = {
   Personalizacion: undefined;
+  PreguntasEjercicio: undefined;
+  PreguntasNutricion: undefined;
   DatosEstadisticos: undefined;
   DatosEstiloVida: undefined;
   DatosSalud: undefined;
+  ObjetivoDieta: undefined;
 };
 
 export type MainTabParamList = {
@@ -67,9 +73,12 @@ function OnboardingNavigator() {
       }}
     >
       <OnboardingStack.Screen name="Personalizacion" component={PersonalizacionScreen} />
+      <OnboardingStack.Screen name="PreguntasEjercicio" component={PreguntasEjercicioScreen} />
+      <OnboardingStack.Screen name="PreguntasNutricion" component={PreguntasNutricionScreen} />
       <OnboardingStack.Screen name="DatosEstadisticos" component={DatosEstadisticosScreen} />
       <OnboardingStack.Screen name="DatosEstiloVida" component={DatosEstiloVidaScreen} />
       <OnboardingStack.Screen name="DatosSalud" component={DatosSaludScreen} />
+      <OnboardingStack.Screen name="ObjetivoDieta" component={ObjetivoDietaScreen} />
     </OnboardingStack.Navigator>
   );
 }

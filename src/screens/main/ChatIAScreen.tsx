@@ -29,7 +29,7 @@ const SUGERENCIAS = [
   '¿Cuántas proteínas necesito?',
 ];
 
-const SALUDO_GENERICO = 'Hola 👋 Soy tu asistente FitAI. ¿En qué te ayudo hoy?';
+const SALUDO_GENERICO = 'Hola 👋 Soy tu asistente Holos. ¿En qué te ayudo hoy?';
 
 export default function ChatIAScreen() {
   const { user } = useUser();
@@ -62,7 +62,7 @@ export default function ChatIAScreen() {
       try {
         GeminiService.initChat(user);
         setIaLista(true);
-        const saludo = `Hola ${user.nombre}, soy tu asistente FitAI. Estoy listo para escucharte. En que te ayudo hoy?`;
+        const saludo = `Hola ${user.nombre}, soy tu asistente Holos. Estoy listo para escucharte. En que te ayudo hoy?`;
         setMensajes([{ id: '0', from: 'ia', text: saludo }]);
         hablar(saludo);
       } catch {
@@ -160,7 +160,7 @@ export default function ChatIAScreen() {
     if (!granted) {
       Alert.alert(
         'Permiso requerido',
-        'FitAI necesita acceso al micrófono y reconocimiento de voz. Actívalo en Configuración.',
+        'Holos necesita acceso al micrófono y reconocimiento de voz. Actívalo en Configuración.',
         [{ text: 'Entendido' }]
       );
       return;
@@ -188,7 +188,7 @@ export default function ChatIAScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={[styles.headerDot, iaLista && styles.headerDotActive]} />
-          <Text style={styles.headerTitle}>FitAI Assistant</Text>
+          <Text style={styles.headerTitle}>Holos Assistant</Text>
           <Text style={[styles.headerStatus, iaLista && styles.headerStatusActive]}>
             {iaLista ? 'Conectado' : 'Desconectado'}
           </Text>

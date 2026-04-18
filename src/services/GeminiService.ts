@@ -19,7 +19,7 @@ function buildSystemPrompt(user: UserProfile): string {
   ];
   const condicionesActivas = saludPreguntas.filter((_, i) => user.togglesSalud?.[i]);
 
-  return `Eres FitAI, el entrenador personal con inteligencia artificial del usuario. Tienes acceso completo a su perfil biométrico y de salud. SIEMPRE responde en español, de forma concisa, cálida y personalizada.
+  return `Eres Holos, el entrenador personal con inteligencia artificial del usuario. Tienes acceso completo a su perfil biométrico y de salud. SIEMPRE responde en español, de forma concisa, cálida y personalizada.
 
 === PERFIL COMPLETO DEL USUARIO ===
 Nombre: ${user.nombre}

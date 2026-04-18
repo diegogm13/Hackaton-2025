@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "FitAI",
-    "slug": "FitAI",
+    "name": "Holos",
+    "slug": "Holos",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -15,11 +15,11 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "FitAI necesita acceso al micrófono para transcribir tus mensajes de voz.",
-        "NSSpeechRecognitionUsageDescription": "FitAI usa reconocimiento de voz para convertir tu audio en texto.",
+        "NSMicrophoneUsageDescription": "Holos necesita acceso al micrófono para transcribir tus mensajes de voz.",
+        "NSSpeechRecognitionUsageDescription": "Holos usa reconocimiento de voz para convertir tu audio en texto.",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "bundleIdentifier": "com.pedro287373.FitAI"
+      "bundleIdentifier": "com.pedro287373.Holos"
     },
     "android": {
       "adaptiveIcon": {
@@ -31,7 +31,7 @@
       "permissions": [
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.pedro287373.FitAI"
+      "package": "com.pedro287373.Holos"
     },
     "web": {
       "favicon": "./assets/favicon.png"

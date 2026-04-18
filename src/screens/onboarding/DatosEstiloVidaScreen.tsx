@@ -17,14 +17,14 @@ export default function DatosEstiloVidaScreen({ navigation }: Props) {
   const [rutina, setRutina] = useState(1);
   const [disponibilidad, setDisponibilidad] = useState(1);
   const [dieta, setDieta] = useState(0);
-  const [habitos, setHabitos] = useState([false, false, false]);
+  const [habitos, setHabitos] = useState([false, false]);
   const [alergias, setAlergias] = useState('');
   const { updateData } = useOnboarding();
 
   const RUTINAS = ['Nunca', '1-2x/sem', '3-4x/sem', '5+/sem'];
   const DISPONIBILIDAD = ['30 min', '1 hora', '2 horas', 'Flexible'];
   const DIETAS = ['Omnívoro', 'Vegano', 'Vegetariano', 'Keto'];
-  const HABITOS = ['Consume alcohol', 'Fuma tabaco', 'Usa suplementos'];
+  const HABITOS = ['Consume alcohol', 'Fuma tabaco'];
 
   const toggleHabito = (i: number) => {
     const next = [...habitos];

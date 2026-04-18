@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View, Text, TouchableOpacity,
-  StyleSheet, ScrollView,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation';
@@ -14,21 +11,9 @@ type Props = {
 };
 
 const OPCIONES = [
-  {
-    icon: '🏋️',
-    titulo: 'Plan de Ejercicio',
-    desc: 'Rutinas personalizadas\nsegún tu físico y metas',
-  },
-  {
-    icon: '🥗',
-    titulo: 'Plan Nutricional',
-    desc: 'Macros, calorías y dietas\nadaptadas a tu cuerpo',
-  },
-  {
-    icon: '⚡',
-    titulo: 'Plan Completo',
-    desc: 'Ejercicio + Nutrición\nLa transformación total',
-  },
+  { icon: '🏋️', titulo: 'Plan de Ejercicio', desc: 'Rutinas personalizadas\nsegún tu físico y metas' },
+  { icon: '🥗', titulo: 'Plan Nutricional', desc: 'Macros, calorías y dietas\nadaptadas a tu cuerpo' },
+  { icon: '⚡', titulo: 'Plan Completo', desc: 'Ejercicio + Nutrición\nLa transformación total' },
 ];
 
 export default function PersonalizacionScreen({ navigation }: Props) {
@@ -37,20 +22,21 @@ export default function PersonalizacionScreen({ navigation }: Props) {
 
   const handleNext = () => {
     updateData({ plan: selected });
-    navigation.navigate('DatosEstadisticos');
+    if (selected === 0) navigation.navigate('PreguntasEjercicio');
+    else if (selected === 1) navigation.navigate('PreguntasNutricion');
+    else navigation.navigate('PreguntasEjercicio');
   };
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-
-        <Text style={styles.stepText}>Paso 1 de 4</Text>
+        <Text style={styles.stepText}>Paso 1 de 7</Text>
         <View style={styles.progressBg}>
-          <View style={[styles.progressFill, { width: '25%' }]} />
+          <View style={[styles.progressFill, { width: '14%' }]} />
         </View>
 
         <Text style={styles.title}>¿Cuál es tu objetivo?</Text>
-        <Text style={styles.subtitle}>Personaliza tu experiencia FitAI</Text>
+        <Text style={styles.subtitle}>Personaliza tu experiencia Holos</Text>
 
         <View style={styles.cards}>
           {OPCIONES.map((op, i) => (
@@ -62,9 +48,7 @@ export default function PersonalizacionScreen({ navigation }: Props) {
             >
               <Text style={styles.cardIcon}>{op.icon}</Text>
               <View style={styles.cardContent}>
-                <Text style={[styles.cardTitle, i === selected && styles.cardTitleSelected]}>
-                  {op.titulo}
-                </Text>
+                <Text style={[styles.cardTitle, i === selected && styles.cardTitleSelected]}>{op.titulo}</Text>
                 <Text style={styles.cardDesc}>{op.desc}</Text>
               </View>
               {i === selected && (
@@ -79,7 +63,6 @@ export default function PersonalizacionScreen({ navigation }: Props) {
         <TouchableOpacity style={styles.btn} onPress={handleNext}>
           <Text style={styles.btnText}>Siguiente →</Text>
         </TouchableOpacity>
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -94,35 +77,15 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: '800', color: Colors.white, marginBottom: 8 },
   subtitle: { fontSize: 15, color: Colors.textSecondary, marginBottom: 32 },
   cards: { gap: 16, flex: 1 },
-  card: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: Spacing.cardRadius,
-    borderWidth: 1, borderColor: Colors.border,
-    padding: 20, gap: 14,
-  },
-  cardSelected: {
-    backgroundColor: Colors.accentDark,
-    borderColor: Colors.accent,
-    borderWidth: 2,
-  },
+  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: Spacing.cardRadius, borderWidth: 1, borderColor: Colors.border, padding: 20, gap: 14 },
+  cardSelected: { backgroundColor: Colors.accentDark, borderColor: Colors.accent, borderWidth: 2 },
   cardIcon: { fontSize: 38 },
   cardContent: { flex: 1 },
   cardTitle: { fontSize: 17, fontWeight: '800', color: Colors.white, marginBottom: 4 },
   cardTitleSelected: { color: Colors.accent },
   cardDesc: { fontSize: 13, color: Colors.textSecondary, lineHeight: 19 },
-  checkCircle: {
-    width: 26, height: 26, borderRadius: 13,
-    backgroundColor: Colors.accent,
-    alignItems: 'center', justifyContent: 'center',
-  },
+  checkCircle: { width: 26, height: 26, borderRadius: 13, backgroundColor: Colors.accent, alignItems: 'center', justifyContent: 'center' },
   checkMark: { fontSize: 13, fontWeight: '800', color: Colors.bg },
-  btn: {
-    height: Spacing.buttonHeight,
-    backgroundColor: Colors.accent,
-    borderRadius: Spacing.buttonRadius,
-    alignItems: 'center', justifyContent: 'center',
-    marginTop: 32,
-  },
+  btn: { height: Spacing.buttonHeight, backgroundColor: Colors.accent, borderRadius: Spacing.buttonRadius, alignItems: 'center', justifyContent: 'center', marginTop: 32 },
   btnText: { fontSize: 16, fontWeight: '800', color: Colors.bg },
 });

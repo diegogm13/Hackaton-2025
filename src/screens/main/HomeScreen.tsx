@@ -93,7 +93,7 @@ export default function HomeScreen() {
         >
           <View style={styles.iaCardHeader}>
             <View style={styles.iaDot} />
-            <Text style={styles.iaCardLabel}>FitAI · Mensaje del día</Text>
+            <Text style={styles.iaCardLabel}>Holos · Mensaje del día</Text>
           </View>
           {iaLoading ? (
             <View style={{ gap: 8 }}>
