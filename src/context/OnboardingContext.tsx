@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { PlanEjercicioGenerado } from '../models/ejercicios/ExerciseModel';
 
 export type OnboardingData = {
   // Credenciales (capturadas en RegistroScreen)
@@ -29,6 +30,9 @@ export type OnboardingData = {
   medicamentos: string[];
   // ObjetivoDieta
   objetivoDieta: number;
+  planEjercicios: PlanEjercicioGenerado; 
+  userId?: string;
+  token?: string;
 };
 
 type OnboardingContextType = {
