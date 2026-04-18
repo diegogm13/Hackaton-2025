@@ -3,7 +3,8 @@
     "allow": [
       "Bash(npx expo *)",
       "Bash(npm install *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(xargs grep *)"
     ]
   }
 }

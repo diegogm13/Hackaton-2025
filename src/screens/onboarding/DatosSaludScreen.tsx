@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, ScrollView, ActivityIndicator,
+  StyleSheet, ScrollView, ActivityIndicator, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -62,6 +62,7 @@ export default function DatosSaludScreen({ navigation }: Props) {
 
       if (!result.success) {
         setSaving(false);
+        Alert.alert('Error', result.error ?? 'No se pudo crear la cuenta. Intenta de nuevo.');
         return;
       }
 
@@ -72,8 +73,9 @@ export default function DatosSaludScreen({ navigation }: Props) {
       rootNav.dispatch(
         CommonActions.reset({ index: 0, routes: [{ name: 'MainApp' }] })
       );
-    } catch {
+    } catch (e: any) {
       setSaving(false);
+      Alert.alert('Error', e?.message ?? 'Ocurrió un error inesperado. Intenta de nuevo.');
     }
   };
 

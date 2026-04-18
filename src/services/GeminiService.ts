@@ -79,22 +79,27 @@ export const GeminiService = {
   },
 
   async transcribeAudio(base64Audio: string): Promise<string> {
+    if (!base64Audio || base64Audio.length < 100) {
+      throw new Error('Audio demasiado corto para transcribir');
+    }
+
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    // Usar el nombre completo del modelo para evitar el 404
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    
-    const prompt = [
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+
+    const result = await model.generateContent([
       {
         inlineData: {
-          mimeType: "audio/mp4",
-          data: base64Audio
-        }
+          mimeType: 'audio/mp4',
+          data: base64Audio,
+        },
       },
-      { text: "Transcribe exactamente lo que se dice en este audio en ESPAÑOL, palabra por palabra. Devuelve ÚNICAMENTE el texto transcrito, sin comillas ni introducciones." }
-    ];
+      {
+        text: 'Transcribe exactamente lo que se dice en este audio en ESPAÑOL, palabra por palabra. Devuelve ÚNICAMENTE el texto transcrito, sin comillas ni introducciones.',
+      },
+    ]);
 
-    const result = await model.generateContent(prompt);
-    return result.response.text().trim();
+    const text = result.response.text().trim();
+    return text;
   },
 
   isReady(): boolean {

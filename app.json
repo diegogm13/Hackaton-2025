@@ -13,7 +13,13 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "FitAI necesita acceso al micrófono para transcribir tus mensajes de voz.",
+        "NSSpeechRecognitionUsageDescription": "FitAI usa reconocimiento de voz para convertir tu audio en texto.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.pedro287373.FitAI"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,10 +27,23 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.pedro287373.FitAI"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-speech-recognition",
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "8d004c32-fbee-4c1c-bef7-dd68201ca321"
+      }
     }
   }
 }

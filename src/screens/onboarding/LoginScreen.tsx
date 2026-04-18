@@ -27,7 +27,9 @@ export default function LoginScreen({ navigation }: Props) {
   const { setUser } = useUser();
 
   const handleLogin = async () => {
-    if (!email || !password) { setError('Completa todos los campos'); return; }
+    if (!email.trim() || !password) { setError('Completa todos los campos'); return; }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) { setError('Ingresa un correo electrónico válido'); return; }
     setError('');
     setLoading(true);
     const result = await AuthService.login(email, password);

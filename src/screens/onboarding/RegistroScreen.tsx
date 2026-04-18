@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView,
-  Platform, ScrollView,
+  Platform, ScrollView, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,7 +28,17 @@ export default function RegistroScreen({ navigation }: Props) {
   const { updateData } = useOnboarding();
 
   const handleRegistro = () => {
-    updateData({ nombre, email, password });
+    if (!nombre.trim()) { Alert.alert('Campo requerido', 'Ingresa tu nombre completo.'); return; }
+    if (!email.trim()) { Alert.alert('Campo requerido', 'Ingresa tu correo electrónico.'); return; }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) { Alert.alert('Correo inválido', 'Ingresa un correo electrónico válido.'); return; }
+    if (!password) { Alert.alert('Campo requerido', 'Ingresa una contraseña.'); return; }
+    if (password.length < 6) { Alert.alert('Contraseña débil', 'La contraseña debe tener al menos 6 caracteres.'); return; }
+    if (!confirm) { Alert.alert('Campo requerido', 'Confirma tu contraseña.'); return; }
+    if (password !== confirm) { Alert.alert('Contraseñas no coinciden', 'Las contraseñas ingresadas no son iguales.'); return; }
+    if (!aceptaTerminos) { Alert.alert('Términos requeridos', 'Debes aceptar los Términos y Condiciones para continuar.'); return; }
+
+    updateData({ nombre: nombre.trim(), email: email.trim().toLowerCase(), password });
     rootNav.dispatch(
       CommonActions.reset({ index: 0, routes: [{ name: 'Onboarding' }] })
     );

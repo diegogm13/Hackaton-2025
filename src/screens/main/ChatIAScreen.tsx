@@ -7,11 +7,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system/legacy';
+import {
+  ExpoSpeechRecognitionModule,
+  useSpeechRecognitionEvent,
+} from 'expo-speech-recognition';
+import * as Speech from 'expo-speech';
 import { useUser } from '../../context/UserContext';
 import { GeminiService } from '../../services/GeminiService';
-import { SpeechService } from '../../services/SpeechService';
 import { Colors, Spacing } from '../../theme';
 
 type Mensaje = {
@@ -36,23 +38,40 @@ export default function ChatIAScreen() {
   const [cargando, setCargando] = useState(false);
   const [escuchando, setEscuchando] = useState(false);
   const [iaLista, setIaLista] = useState(false);
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const transcriptRef = useRef('');
   
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    return () => {
+      Speech.stop();
+      ExpoSpeechRecognitionModule.abort();
+    };
+  }, []);
+
+  const hablar = (texto: string) => {
+    const limpio = texto.replace(/[^\w\s,.!?¿¡áéíóúüñÁÉÍÓÚÜÑ]/g, '');
+    Speech.speak(limpio, {
+      onError: (e) => console.error('Speech error', e),
+    });
+  };
 
   useEffect(() => {
     if (user) {
       try {
         GeminiService.initChat(user);
         setIaLista(true);
-        const saludo = `Hola ${user.nombre} 👋 Soy tu asistente FitAI. Estoy listo para escucharte. ¿En qué te ayudo hoy?`;
+        const saludo = `Hola ${user.nombre}, soy tu asistente FitAI. Estoy listo para escucharte. En que te ayudo hoy?`;
         setMensajes([{ id: '0', from: 'ia', text: saludo }]);
+        hablar(saludo);
       } catch {
         setMensajes([{ id: '0', from: 'ia', text: SALUDO_GENERICO }]);
+        hablar(SALUDO_GENERICO);
       }
     } else {
       setMensajes([{ id: '0', from: 'ia', text: SALUDO_GENERICO }]);
+      hablar(SALUDO_GENERICO);
     }
   }, [user?.id]);
 
@@ -83,16 +102,44 @@ export default function ChatIAScreen() {
         ...prev.filter(m => m.id !== typingId),
         { id: `ia_${Date.now()}`, from: 'ia', text: respuesta },
       ]);
+      hablar(respuesta);
     } catch (err) {
+      const errorMsg = 'Hubo un error al procesar tu mensaje. Intenta de nuevo.';
       setMensajes(prev => [
         ...prev.filter(m => m.id !== typingId),
-        { id: `ia_${Date.now()}`, from: 'ia', text: 'Error al procesar.' },
+        { id: `ia_${Date.now()}`, from: 'ia', text: errorMsg },
       ]);
+      hablar(errorMsg);
     } finally {
       setCargando(false);
       scrollAbajo();
     }
   };
+
+  useSpeechRecognitionEvent('result', (event) => {
+    const text = event.results?.[0]?.transcript ?? '';
+    transcriptRef.current = text;
+    setTexto(text);
+  });
+
+  useSpeechRecognitionEvent('end', () => {
+    setEscuchando(false);
+    detenerPulso();
+    const transcript = transcriptRef.current;
+    transcriptRef.current = '';
+    if (transcript.trim()) {
+      enviarMensaje(transcript.trim());
+    }
+  });
+
+  useSpeechRecognitionEvent('error', (event) => {
+    setEscuchando(false);
+    detenerPulso();
+    transcriptRef.current = '';
+    if (event.error !== 'aborted') {
+      Alert.alert('Error de voz', 'No se pudo reconocer el audio. Intenta de nuevo.');
+    }
+  });
 
   const pulsar = () => {
     Animated.loop(
@@ -109,55 +156,24 @@ export default function ChatIAScreen() {
   };
 
   const startRecording = async () => {
-    try {
-      const { status } = await Audio.requestPermissionsAsync();
-      if (status !== 'granted') return;
-
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      const { recording: newRecording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
+    const { granted } = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+    if (!granted) {
+      Alert.alert(
+        'Permiso requerido',
+        'FitAI necesita acceso al micrófono y reconocimiento de voz. Actívalo en Configuración.',
+        [{ text: 'Entendido' }]
       );
-      setRecording(newRecording);
-      setEscuchando(true);
-      pulsar();
-    } catch (err) {
-      console.error('Failed to start recording', err);
+      return;
     }
+    transcriptRef.current = '';
+    setTexto('');
+    ExpoSpeechRecognitionModule.start({ lang: 'es-MX', interimResults: true });
+    setEscuchando(true);
+    pulsar();
   };
 
-  const stopRecording = async () => {
-    if (!recording) return;
-    setEscuchando(false);
-    detenerPulso();
-
-    try {
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      setRecording(null);
-
-      if (uri) {
-        setCargando(true);
-        // 1. Transcribir (Speech-to-Text usando Gemini que es más flexible)
-        const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
-        const transcript = await GeminiService.transcribeAudio(base64);
-        
-        if (transcript && transcript.length > 0) {
-          // 2. Aparecer en el input
-          setTexto(transcript);
-          // 3. Enviarse automáticamente
-          enviarMensaje(transcript);
-        } else {
-          setCargando(false);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to stop recording', err);
-      setCargando(false);
-    }
+  const stopRecording = () => {
+    ExpoSpeechRecognitionModule.stop();
   };
 
   const toggleMic = () => {
