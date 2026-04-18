@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, SafeAreaView, ScrollView, Modal,
+  StyleSheet, ScrollView, Modal,
   ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -13,6 +14,9 @@ import { useUser } from '../../context/UserContext';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { Colors, Spacing } from '../../theme';
 import Monito from '../../components/Monito';
+
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 
 const PLAN_LABELS = ['Plan de Ejercicio', 'Plan Nutricional', 'Plan Completo'];
 const PLAN_ICONS = ['🏋️', '🥗', '⚡'];
@@ -28,6 +32,7 @@ const AJUSTES = [
 
 export default function PerfilScreen() {
   const rootNav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation();
   const { user, setUser, updateUser } = useUser();
   const { resetData } = useOnboarding();
 
@@ -37,6 +42,70 @@ export default function PerfilScreen() {
   const [editAltura, setEditAltura] = useState('');
   const [editPlan, setEditPlan] = useState(0);
   const [saving, setSaving] = useState(false);
+
+  const handleExportPDF = async () => {
+    if (!user) return;
+    
+    const html = `
+      <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+          <style>
+            body { font-family: 'Helvetica'; background-color: #0D0D0D; color: #FFFFFF; padding: 40px; }
+            .header { text-align: center; border-bottom: 2px solid #00E776; padding-bottom: 20px; margin-bottom: 30px; }
+            .title { font-size: 32px; font-weight: bold; color: #00E776; }
+            .subtitle { font-size: 16px; color: #A0A0A0; }
+            .section { margin-bottom: 30px; background: #1E1E1E; padding: 20px; border-radius: 15px; border: 1px solid #383838; }
+            .section-title { font-size: 20px; font-weight: bold; margin-bottom: 15px; color: #00E776; }
+            .grid { display: flex; flex-wrap: wrap; gap: 20px; }
+            .item { flex: 1; min-width: 120px; }
+            .label { font-size: 11px; color: #A0A0A0; text-transform: uppercase; letter-spacing: 1px; }
+            .value { font-size: 22px; font-weight: bold; margin-top: 5px; }
+            .footer { text-align: center; font-size: 11px; color: #666; margin-top: 60px; border-top: 1px solid #333; padding-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="title">REPORTE FITAI</div>
+            <div class="subtitle">Resumen de progreso físico y salud</div>
+          </div>
+          
+          <div class="section">
+            <div class="section-title">Datos del Usuario</div>
+            <div class="grid">
+              <div class="item"><div class="label">Nombre</div><div class="value">${user.nombre}</div></div>
+              <div class="item"><div class="label">Plan Activo</div><div class="value">${PLAN_LABELS[user.plan ?? 2]}</div></div>
+              <div class="item"><div class="label">Email</div><div class="value">${user.email}</div></div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Métricas Actuales</div>
+            <div class="grid">
+              <div class="item"><div class="label">Peso Actual</div><div class="value">${user.peso} kg</div></div>
+              <div class="item"><div class="label">Grasa Corporal</div><div class="value">${user.grasa}%</div></div>
+              <div class="item"><div class="label">Masa Muscular</div><div class="value">${user.musculo}%</div></div>
+              <div class="item"><div class="label">Altura</div><div class="value">${user.altura} cm</div></div>
+            </div>
+          </div>
+
+          <div class="footer">Este reporte fue generado automáticamente por FitAI Assistant el ${new Date().toLocaleDateString()}</div>
+        </body>
+      </html>
+    `;
+
+    try {
+      const { uri } = await Print.printToFileAsync({ html });
+      await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+    } catch (error) {
+      console.error('Error exportando PDF:', error);
+    }
+  };
+
+  const handleAction = (label: string) => {
+    if (label === 'Exportar PDF') handleExportPDF();
+    else if (label === 'Mi plan actual') navigation.navigate('FisicoDetalle' as any);
+  };
 
   const handleOpenEdit = () => {
     setEditNombre(user?.nombre ?? '');
@@ -155,6 +224,7 @@ export default function PerfilScreen() {
             <TouchableOpacity
               key={a.label}
               style={[styles.ajusteRow, i < AJUSTES.length - 1 && styles.ajusteRowBorder]}
+              onPress={() => handleAction(a.label)}
             >
               <Ionicons name={a.icon as any} size={20} color={Colors.textLabel} style={{ marginRight: 14 }} />
               <Text style={styles.ajusteLabel}>{a.label}</Text>
