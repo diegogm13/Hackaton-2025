@@ -8,6 +8,8 @@ import { useNavigation, CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { OnboardingStackParamList, RootStackParamList } from '../../navigation';
 import { useOnboarding } from '../../context/OnboardingContext';
+import { AuthService } from '../../services/AuthService';
+import { useUser } from '../../context/UserContext';
 import { Colors, Spacing } from '../../theme';
 
 type Props = {
@@ -25,7 +27,8 @@ export default function DatosSaludScreen({ navigation }: Props) {
   const [toggles, setToggles] = useState<boolean[]>([false, false, false, false]);
   const [condiciones, setCondiciones] = useState('');
   const [saving, setSaving] = useState(false);
-  const { data, updateData } = useOnboarding();
+  const { data, updateData, resetData } = useOnboarding();
+  const { setUser } = useUser();
   const rootNav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const toggle = (i: number) => {
@@ -37,18 +40,38 @@ export default function DatosSaludScreen({ navigation }: Props) {
   const handleFinish = async () => {
     setSaving(true);
     try {
-      const perfil = {
-        ...data,
+      const result = await AuthService.register({
+        nombre: data.nombre ?? '',
+        email: data.email ?? '',
+        password: data.password ?? '',
+        plan: data.plan ?? 2,
+        altura: data.altura ?? '',
+        peso: data.peso ?? '',
+        musculo: data.musculo ?? '',
+        grasa: data.grasa ?? '',
+        etnia: data.etnia ?? '',
+        rutina: data.rutina ?? 1,
+        disponibilidad: data.disponibilidad ?? 1,
+        dieta: data.dieta ?? 0,
+        habitos: data.habitos ?? [false, false, false],
+        alergias: data.alergias ?? '',
         togglesSalud: toggles,
         condicionesSalud: condiciones,
-      };
-      await AsyncStorage.setItem('userProfile', JSON.stringify(perfil));
+      });
+
+      if (!result.success) {
+        setSaving(false);
+        return;
+      }
+
+      setUser(result.user!);
       await AsyncStorage.setItem('hasCompletedOnboarding', 'true');
+      resetData();
 
       rootNav.dispatch(
         CommonActions.reset({ index: 0, routes: [{ name: 'MainApp' }] })
       );
-    } catch (e) {
+    } catch {
       setSaving(false);
     }
   };

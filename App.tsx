@@ -2,6 +2,7 @@ import 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import AppNavigator from './src/navigation';
 import { OnboardingProvider } from './src/context/OnboardingContext';
+import { UserProvider } from './src/context/UserContext';
 
 // Manejador de errores global para depuración en terminal
 if (__DEV__) {
@@ -18,9 +19,11 @@ if (__DEV__) {
 
 export default function App() {
   return (
-    <OnboardingProvider>
-      <StatusBar style="light" />
-      <AppNavigator />
-    </OnboardingProvider>
+    <UserProvider>
+      <OnboardingProvider>
+        <StatusBar style="light" />
+        <AppNavigator />
+      </OnboardingProvider>
+    </UserProvider>
   );
 }

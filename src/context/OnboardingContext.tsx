@@ -1,17 +1,25 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 export type OnboardingData = {
+  // Credenciales (capturadas en RegistroScreen)
+  nombre: string;
+  email: string;
+  password: string;
+  // Personalizacion
   plan: number;
+  // DatosEstadisticos
   altura: string;
   peso: string;
   musculo: string;
   grasa: string;
   etnia: string;
+  // DatosEstiloVida
   rutina: number;
   disponibilidad: number;
   dieta: number;
   habitos: boolean[];
   alergias: string;
+  // DatosSalud
   togglesSalud: boolean[];
   condicionesSalud: string;
 };

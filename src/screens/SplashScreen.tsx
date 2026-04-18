@@ -3,10 +3,13 @@ import { View, Image, StyleSheet, Animated } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CommonActions, NavigationProp, useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation';
+import { AuthService } from '../services/AuthService';
+import { useUser } from '../context/UserContext';
 import { Colors } from '../theme';
 
 export default function SplashScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const { setUser } = useUser();
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.8)).current;
 
@@ -26,23 +29,20 @@ export default function SplashScreen() {
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scale, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
+      Animated.timing(opacity, { toValue: 1, duration: 600, useNativeDriver: true }),
+      Animated.timing(scale, { toValue: 1, duration: 600, useNativeDriver: true }),
     ]).start();
 
     const verify = async () => {
       try {
         const value = await AsyncStorage.getItem('hasCompletedOnboarding');
-        const destination: keyof RootStackParamList = value === 'true' ? 'MainApp' : 'Auth';
-        setTimeout(() => fadeOutAndNavigate(destination), 1800);
+        if (value === 'true') {
+          const currentUser = await AuthService.getCurrentUser();
+          if (currentUser) setUser(currentUser);
+          setTimeout(() => fadeOutAndNavigate('MainApp'), 1800);
+        } else {
+          setTimeout(() => fadeOutAndNavigate('Auth'), 1800);
+        }
       } catch {
         setTimeout(() => fadeOutAndNavigate('Auth'), 1800);
       }

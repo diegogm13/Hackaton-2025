@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { AuthStackParamList, RootStackParamList } from '../../navigation';
+import { useOnboarding } from '../../context/OnboardingContext';
 import { Colors, Spacing } from '../../theme';
 
 type Props = {
@@ -23,8 +24,10 @@ export default function RegistroScreen({ navigation }: Props) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const rootNav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { updateData } = useOnboarding();
 
   const handleRegistro = () => {
+    updateData({ nombre, email, password });
     rootNav.dispatch(
       CommonActions.reset({ index: 0, routes: [{ name: 'Onboarding' }] })
     );

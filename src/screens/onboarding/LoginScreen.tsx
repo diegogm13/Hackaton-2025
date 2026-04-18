@@ -8,6 +8,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { AuthStackParamList, RootStackParamList } from '../../navigation';
+import { AuthService } from '../../services/AuthService';
+import { useUser } from '../../context/UserContext';
 import { Colors, Spacing } from '../../theme';
 
 type Props = {
@@ -18,11 +20,21 @@ export default function LoginScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const rootNav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { setUser } = useUser();
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
+    if (!email || !password) { setError('Completa todos los campos'); return; }
+    setError('');
+    setLoading(true);
+    const result = await AuthService.login(email, password);
+    setLoading(false);
+    if (!result.success) { setError(result.error ?? 'Error al iniciar sesión'); return; }
+    setUser(result.user!);
     rootNav.dispatch(
-      CommonActions.reset({ index: 0, routes: [{ name: 'Onboarding' }] })
+      CommonActions.reset({ index: 0, routes: [{ name: 'MainApp' }] })
     );
   };
 
@@ -75,8 +87,16 @@ export default function LoginScreen({ navigation }: Props) {
               <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.primaryBtn} onPress={handleLogin}>
-              <Text style={styles.primaryBtnText}>Iniciar Sesión</Text>
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+            <TouchableOpacity
+              style={[styles.primaryBtn, loading && { opacity: 0.6 }]}
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              <Text style={styles.primaryBtnText}>
+                {loading ? 'Verificando...' : 'Iniciar Sesión'}
+              </Text>
             </TouchableOpacity>
 
             <View style={styles.divider}>
@@ -135,6 +155,7 @@ const styles = StyleSheet.create({
   },
   passwordInput: { flex: 1, color: Colors.white, fontSize: 15 },
   eyeBtn: { padding: 4 },
+  errorText: { fontSize: 13, color: '#FF6B6B', textAlign: 'center', marginTop: -4 },
   forgotWrap: { alignSelf: 'flex-end', marginTop: -4 },
   forgotText: { color: Colors.accent, fontSize: 13 },
   primaryBtn: {
