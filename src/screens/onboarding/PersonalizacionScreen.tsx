@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View, Text, TouchableOpacity,
-  StyleSheet, SafeAreaView, ScrollView,
+  StyleSheet, ScrollView,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';

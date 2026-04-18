@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, SafeAreaView, ScrollView,
+  StyleSheet, ScrollView,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation';
@@ -18,14 +19,34 @@ const PREGUNTAS = [
   '¿Estás en período reproductivo activo?',
 ];
 
+const CONDICIONES_LISTA = [
+  'Diabetes T1', 'Diabetes T2', 'Hipertensión', 'Asma', 'Hipotiroidismo',
+  'Arritmia', 'Escoliosis', 'Hernia Discal', 'Ansiedad', 'Depresión',
+  'Artritis', 'Anemia', 'Ninguna',
+];
+
 export default function DatosSaludScreen({ navigation }: Props) {
   const [toggles, setToggles] = useState<boolean[]>([false, false, false, false]);
-  const [condiciones, setCondiciones] = useState('');
+  const [condicionesSeleccionadas, setCondicionesSeleccionadas] = useState<string[]>([]);
 
   const toggle = (i: number) => {
     const next = [...toggles];
     next[i] = !next[i];
     setToggles(next);
+  };
+
+  const toggleCondicion = (cond: string) => {
+    if (cond === 'Ninguna') {
+      setCondicionesSeleccionadas(['Ninguna']);
+      return;
+    }
+    setCondicionesSeleccionadas(prev => {
+      const filtered = prev.filter(c => c !== 'Ninguna');
+      if (filtered.includes(cond)) {
+        return filtered.filter(c => c !== cond);
+      }
+      return [...filtered, cond];
+    });
   };
 
   return (
@@ -57,16 +78,21 @@ export default function DatosSaludScreen({ navigation }: Props) {
           ))}
         </View>
 
-        <Text style={styles.fieldLabel}>Detalla tus condiciones (opcional)</Text>
-        <TextInput
-          style={styles.textArea}
-          placeholder="Ej. diabetes tipo 2, hipertensión..."
-          placeholderTextColor={Colors.placeholder}
-          value={condiciones}
-          onChangeText={setCondiciones}
-          multiline
-          numberOfLines={4}
-        />
+        <Text style={styles.fieldLabel}>Selecciona tus condiciones</Text>
+        <View style={styles.chipsContainer}>
+          {CONDICIONES_LISTA.map((c) => {
+            const isSelected = condicionesSeleccionadas.includes(c);
+            return (
+              <TouchableOpacity
+                key={c}
+                style={[styles.chip, isSelected && styles.chipActive]}
+                onPress={() => toggleCondicion(c)}
+              >
+                <Text style={[styles.chipText, isSelected && styles.chipTextActive]}>{c}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
 
         <TouchableOpacity style={styles.btn} onPress={() => navigation.navigate('DatosEstiloVida')}>
           <Text style={styles.btnText}>Siguiente →</Text>
@@ -105,13 +131,16 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
   },
   toggleDotActive: { alignSelf: 'flex-end' },
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: Colors.textLabel, marginBottom: 8 },
-  textArea: {
-    backgroundColor: Colors.surface,
-    borderRadius: 12, borderWidth: 1, borderColor: Colors.border,
-    padding: 16, color: Colors.white, fontSize: 14,
-    height: 100, textAlignVertical: 'top', marginBottom: 24,
+  fieldLabel: { fontSize: 13, fontWeight: '700', color: Colors.textLabel, marginBottom: 12 },
+  chipsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 32 },
+  chip: {
+    paddingHorizontal: 16, paddingVertical: 10,
+    backgroundColor: Colors.surface, borderRadius: 12,
+    borderWidth: 1, borderColor: Colors.border,
   },
+  chipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
+  chipText: { fontSize: 13, color: Colors.textLabel, fontWeight: '600' },
+  chipTextActive: { color: Colors.bg },
   btn: {
     height: Spacing.buttonHeight,
     backgroundColor: Colors.accent,
