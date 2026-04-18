@@ -5,11 +5,12 @@ import {
   Platform, ScrollView,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { OnboardingStackParamList } from '../../navigation';
+import { useNavigation, CommonActions } from '@react-navigation/native';
+import { AuthStackParamList, RootStackParamList } from '../../navigation';
 import { Colors, Spacing } from '../../theme';
 
 type Props = {
-  navigation: NativeStackNavigationProp<OnboardingStackParamList, 'Registro'>;
+  navigation: NativeStackNavigationProp<AuthStackParamList, 'Registro'>;
 };
 
 export default function RegistroScreen({ navigation }: Props) {
@@ -18,6 +19,13 @@ export default function RegistroScreen({ navigation }: Props) {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [aceptaTerminos, setAceptaTerminos] = useState(false);
+  const rootNav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const handleRegistro = () => {
+    rootNav.dispatch(
+      CommonActions.reset({ index: 0, routes: [{ name: 'Onboarding' }] })
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -52,10 +60,7 @@ export default function RegistroScreen({ navigation }: Props) {
               <Text style={styles.termsLink}>Términos y Condiciones</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.primaryBtn}
-              onPress={() => navigation.navigate('DatosEstadisticos')}
-            >
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleRegistro}>
               <Text style={styles.primaryBtnText}>Crear Cuenta</Text>
             </TouchableOpacity>
           </View>

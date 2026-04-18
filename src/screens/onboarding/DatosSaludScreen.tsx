@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, SafeAreaView, ScrollView,
+  StyleSheet, SafeAreaView, ScrollView, ActivityIndicator,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { OnboardingStackParamList } from '../../navigation';
+import { useNavigation, CommonActions } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { OnboardingStackParamList, RootStackParamList } from '../../navigation';
+import { useOnboarding } from '../../context/OnboardingContext';
 import { Colors, Spacing } from '../../theme';
 
 type Props = {
@@ -21,11 +24,33 @@ const PREGUNTAS = [
 export default function DatosSaludScreen({ navigation }: Props) {
   const [toggles, setToggles] = useState<boolean[]>([false, false, false, false]);
   const [condiciones, setCondiciones] = useState('');
+  const [saving, setSaving] = useState(false);
+  const { data, updateData } = useOnboarding();
+  const rootNav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const toggle = (i: number) => {
     const next = [...toggles];
     next[i] = !next[i];
     setToggles(next);
+  };
+
+  const handleFinish = async () => {
+    setSaving(true);
+    try {
+      const perfil = {
+        ...data,
+        togglesSalud: toggles,
+        condicionesSalud: condiciones,
+      };
+      await AsyncStorage.setItem('userProfile', JSON.stringify(perfil));
+      await AsyncStorage.setItem('hasCompletedOnboarding', 'true');
+
+      rootNav.dispatch(
+        CommonActions.reset({ index: 0, routes: [{ name: 'MainApp' }] })
+      );
+    } catch (e) {
+      setSaving(false);
+    }
   };
 
   return (
@@ -36,9 +61,9 @@ export default function DatosSaludScreen({ navigation }: Props) {
           <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
 
-        <Text style={styles.stepText}>Paso 2 de 3</Text>
+        <Text style={styles.stepText}>Paso 4 de 4</Text>
         <View style={styles.progressBg}>
-          <View style={[styles.progressFill, { width: '66%' }]} />
+          <View style={[styles.progressFill, { width: '100%' }]} />
         </View>
 
         <Text style={styles.title}>Historial de Salud</Text>
@@ -68,8 +93,15 @@ export default function DatosSaludScreen({ navigation }: Props) {
           numberOfLines={4}
         />
 
-        <TouchableOpacity style={styles.btn} onPress={() => navigation.navigate('DatosEstiloVida')}>
-          <Text style={styles.btnText}>Siguiente →</Text>
+        <TouchableOpacity
+          style={[styles.btn, saving && styles.btnDisabled]}
+          onPress={handleFinish}
+          disabled={saving}
+        >
+          {saving
+            ? <ActivityIndicator color={Colors.bg} />
+            : <Text style={styles.btnText}>Comenzar mi plan ✓</Text>
+          }
         </TouchableOpacity>
 
       </ScrollView>
@@ -100,10 +132,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center', padding: 3,
   },
   toggleActive: { backgroundColor: Colors.accent },
-  toggleDot: {
-    width: 18, height: 18, borderRadius: 9,
-    backgroundColor: Colors.white,
-  },
+  toggleDot: { width: 18, height: 18, borderRadius: 9, backgroundColor: Colors.white },
   toggleDotActive: { alignSelf: 'flex-end' },
   fieldLabel: { fontSize: 13, fontWeight: '600', color: Colors.textLabel, marginBottom: 8 },
   textArea: {
@@ -118,5 +147,6 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.buttonRadius,
     alignItems: 'center', justifyContent: 'center',
   },
+  btnDisabled: { opacity: 0.6 },
   btnText: { fontSize: 16, fontWeight: '800', color: Colors.bg },
 });

@@ -5,23 +5,30 @@ import {
   Platform, ScrollView,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { OnboardingStackParamList } from '../../navigation';
+import { useNavigation, CommonActions } from '@react-navigation/native';
+import { AuthStackParamList, RootStackParamList } from '../../navigation';
 import { Colors, Spacing } from '../../theme';
 
 type Props = {
-  navigation: NativeStackNavigationProp<OnboardingStackParamList, 'Login'>;
+  navigation: NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 };
 
 export default function LoginScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const rootNav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const handleLogin = () => {
+    rootNav.dispatch(
+      CommonActions.reset({ index: 0, routes: [{ name: 'Onboarding' }] })
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
 
-          {/* Logo */}
           <View style={styles.logoWrap}>
             <View style={styles.logoCircle}>
               <Text style={styles.logoText}>FIT</Text>
@@ -31,7 +38,6 @@ export default function LoginScreen({ navigation }: Props) {
           <Text style={styles.appTitle}>FitAI</Text>
           <Text style={styles.appSubtitle}>Tu entrenador personal con IA</Text>
 
-          {/* Campos */}
           <View style={styles.form}>
             <TextInput
               style={styles.input}
@@ -55,14 +61,10 @@ export default function LoginScreen({ navigation }: Props) {
               <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.primaryBtn}
-              onPress={() => navigation.navigate('DatosEstadisticos')}
-            >
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleLogin}>
               <Text style={styles.primaryBtnText}>Iniciar Sesión</Text>
             </TouchableOpacity>
 
-            {/* Divider */}
             <View style={styles.divider}>
               <View style={styles.divLine} />
               <Text style={styles.divText}>o continúa con</Text>

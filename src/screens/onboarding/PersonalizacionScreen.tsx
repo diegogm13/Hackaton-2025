@@ -4,8 +4,8 @@ import {
   StyleSheet, SafeAreaView, ScrollView,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
 import { OnboardingStackParamList } from '../../navigation';
+import { useOnboarding } from '../../context/OnboardingContext';
 import { Colors, Spacing } from '../../theme';
 
 type Props = {
@@ -32,15 +32,21 @@ const OPCIONES = [
 
 export default function PersonalizacionScreen({ navigation }: Props) {
   const [selected, setSelected] = useState(2);
-  const rootNav = useNavigation<any>();
+  const { updateData } = useOnboarding();
+
+  const handleNext = () => {
+    updateData({ plan: selected });
+    navigation.navigate('DatosEstadisticos');
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
 
-        <TouchableOpacity style={styles.back} onPress={() => navigation.goBack()}>
-          <Text style={styles.backArrow}>←</Text>
-        </TouchableOpacity>
+        <Text style={styles.stepText}>Paso 1 de 4</Text>
+        <View style={styles.progressBg}>
+          <View style={[styles.progressFill, { width: '25%' }]} />
+        </View>
 
         <Text style={styles.title}>¿Cuál es tu objetivo?</Text>
         <Text style={styles.subtitle}>Personaliza tu experiencia FitAI</Text>
@@ -69,11 +75,8 @@ export default function PersonalizacionScreen({ navigation }: Props) {
           ))}
         </View>
 
-        <TouchableOpacity
-          style={styles.btn}
-          onPress={() => rootNav.reset({ index: 0, routes: [{ name: 'MainApp' }] })}
-        >
-          <Text style={styles.btnText}>Comenzar mi plan</Text>
+        <TouchableOpacity style={styles.btn} onPress={handleNext}>
+          <Text style={styles.btnText}>Siguiente →</Text>
         </TouchableOpacity>
 
       </ScrollView>
@@ -84,8 +87,9 @@ export default function PersonalizacionScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.bg },
   container: { flexGrow: 1, paddingHorizontal: Spacing.screen, paddingBottom: 40 },
-  back: { marginTop: 20, marginBottom: 16 },
-  backArrow: { fontSize: 24, color: Colors.white },
+  stepText: { marginTop: 24, fontSize: 12, color: Colors.textSecondary },
+  progressBg: { height: 6, backgroundColor: '#262626', borderRadius: 3, marginTop: 8, marginBottom: 24 },
+  progressFill: { height: 6, backgroundColor: Colors.accent, borderRadius: 3 },
   title: { fontSize: 28, fontWeight: '800', color: Colors.white, marginBottom: 8 },
   subtitle: { fontSize: 15, color: Colors.textSecondary, marginBottom: 32 },
   cards: { gap: 16, flex: 1 },

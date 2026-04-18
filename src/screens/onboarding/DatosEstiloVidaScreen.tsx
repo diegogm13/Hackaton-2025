@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation';
+import { useOnboarding } from '../../context/OnboardingContext';
 import { Colors, Spacing } from '../../theme';
 
 type Props = {
@@ -17,6 +18,7 @@ export default function DatosEstiloVidaScreen({ navigation }: Props) {
   const [dieta, setDieta] = useState(0);
   const [habitos, setHabitos] = useState([false, false, false]);
   const [alergias, setAlergias] = useState('');
+  const { updateData } = useOnboarding();
 
   const RUTINAS = ['Nunca', '1-2x/sem', '3-4x/sem', '5+/sem'];
   const DISPONIBILIDAD = ['30 min', '1 hora', '2 horas', 'Flexible'];
@@ -27,6 +29,11 @@ export default function DatosEstiloVidaScreen({ navigation }: Props) {
     const next = [...habitos];
     next[i] = !next[i];
     setHabitos(next);
+  };
+
+  const handleNext = () => {
+    updateData({ rutina, disponibilidad, dieta, habitos, alergias });
+    navigation.navigate('DatosSalud');
   };
 
   const ChipRow = ({
@@ -53,9 +60,9 @@ export default function DatosEstiloVidaScreen({ navigation }: Props) {
           <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
 
-        <Text style={styles.stepText}>Paso 3 de 3</Text>
+        <Text style={styles.stepText}>Paso 3 de 4</Text>
         <View style={styles.progressBg}>
-          <View style={[styles.progressFill, { width: '100%' }]} />
+          <View style={[styles.progressFill, { width: '75%' }]} />
         </View>
 
         <Text style={styles.title}>Estilo de Vida</Text>
@@ -101,8 +108,8 @@ export default function DatosEstiloVidaScreen({ navigation }: Props) {
           />
         </View>
 
-        <TouchableOpacity style={styles.btn} onPress={() => navigation.navigate('Personalizacion')}>
-          <Text style={styles.btnText}>Continuar →</Text>
+        <TouchableOpacity style={styles.btn} onPress={handleNext}>
+          <Text style={styles.btnText}>Siguiente →</Text>
         </TouchableOpacity>
 
       </ScrollView>

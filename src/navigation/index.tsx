@@ -5,33 +5,37 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme';
 
-// Onboarding screens
+// Screens
+import SplashScreen from '../screens/SplashScreen';
 import LoginScreen from '../screens/onboarding/LoginScreen';
 import RegistroScreen from '../screens/onboarding/RegistroScreen';
-import DatosEstadisticosScreen from '../screens/onboarding/DatosEstadisticosScreen';
-import DatosSaludScreen from '../screens/onboarding/DatosSaludScreen';
-import DatosEstiloVidaScreen from '../screens/onboarding/DatosEstiloVidaScreen';
 import PersonalizacionScreen from '../screens/onboarding/PersonalizacionScreen';
-
-// Main screens
+import DatosEstadisticosScreen from '../screens/onboarding/DatosEstadisticosScreen';
+import DatosEstiloVidaScreen from '../screens/onboarding/DatosEstiloVidaScreen';
+import DatosSaludScreen from '../screens/onboarding/DatosSaludScreen';
 import HomeScreen from '../screens/main/HomeScreen';
 import ChatIAScreen from '../screens/main/ChatIAScreen';
 import PerfilScreen from '../screens/main/PerfilScreen';
 import FisicoDetalleScreen from '../screens/main/FisicoDetalleScreen';
 
 export type RootStackParamList = {
+  Splash: undefined;
+  Auth: undefined;
   Onboarding: undefined;
   MainApp: undefined;
   FisicoDetalle: undefined;
 };
 
-export type OnboardingStackParamList = {
+export type AuthStackParamList = {
   Login: undefined;
   Registro: undefined;
-  DatosEstadisticos: undefined;
-  DatosSalud: undefined;
-  DatosEstiloVida: undefined;
+};
+
+export type OnboardingStackParamList = {
   Personalizacion: undefined;
+  DatosEstadisticos: undefined;
+  DatosEstiloVida: undefined;
+  DatosSalud: undefined;
 };
 
 export type MainTabParamList = {
@@ -41,18 +45,31 @@ export type MainTabParamList = {
 };
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
+const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const OnboardingStack = createNativeStackNavigator<OnboardingStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
+function AuthNavigator() {
+  return (
+    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+      <AuthStack.Screen name="Login" component={LoginScreen} />
+      <AuthStack.Screen name="Registro" component={RegistroScreen} />
+    </AuthStack.Navigator>
+  );
+}
+
 function OnboardingNavigator() {
   return (
-    <OnboardingStack.Navigator screenOptions={{ headerShown: false }}>
-      <OnboardingStack.Screen name="Login" component={LoginScreen} />
-      <OnboardingStack.Screen name="Registro" component={RegistroScreen} />
-      <OnboardingStack.Screen name="DatosEstadisticos" component={DatosEstadisticosScreen} />
-      <OnboardingStack.Screen name="DatosSalud" component={DatosSaludScreen} />
-      <OnboardingStack.Screen name="DatosEstiloVida" component={DatosEstiloVidaScreen} />
+    <OnboardingStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: 'slide_from_right',
+      }}
+    >
       <OnboardingStack.Screen name="Personalizacion" component={PersonalizacionScreen} />
+      <OnboardingStack.Screen name="DatosEstadisticos" component={DatosEstadisticosScreen} />
+      <OnboardingStack.Screen name="DatosEstiloVida" component={DatosEstiloVidaScreen} />
+      <OnboardingStack.Screen name="DatosSalud" component={DatosSaludScreen} />
     </OnboardingStack.Navigator>
   );
 }
@@ -94,7 +111,9 @@ function MainTabNavigator() {
 export default function AppNavigator() {
   return (
     <NavigationContainer>
-      <RootStack.Navigator screenOptions={{ headerShown: false }}>
+      <RootStack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
+        <RootStack.Screen name="Splash" component={SplashScreen} />
+        <RootStack.Screen name="Auth" component={AuthNavigator} />
         <RootStack.Screen name="Onboarding" component={OnboardingNavigator} />
         <RootStack.Screen name="MainApp" component={MainTabNavigator} />
         <RootStack.Screen name="FisicoDetalle" component={FisicoDetalleScreen} />

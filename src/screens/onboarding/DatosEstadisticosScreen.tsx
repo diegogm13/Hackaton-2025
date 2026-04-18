@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation';
+import { useOnboarding } from '../../context/OnboardingContext';
 import { Colors, Spacing } from '../../theme';
 
 type Props = {
@@ -20,15 +21,24 @@ export default function DatosEstadisticosScreen({ navigation }: Props) {
   const [grasa, setGrasa] = useState('');
   const [etnia, setEtnia] = useState('');
   const [showEtnias, setShowEtnias] = useState(false);
+  const { updateData } = useOnboarding();
+
+  const handleNext = () => {
+    updateData({ altura, peso, musculo, grasa, etnia });
+    navigation.navigate('DatosEstiloVida');
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
 
-        {/* Progress */}
-        <Text style={styles.stepText}>Paso 1 de 3</Text>
+        <TouchableOpacity style={styles.back} onPress={() => navigation.goBack()}>
+          <Text style={styles.backArrow}>←</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.stepText}>Paso 2 de 4</Text>
         <View style={styles.progressBg}>
-          <View style={[styles.progressFill, { width: '33%' }]} />
+          <View style={[styles.progressFill, { width: '50%' }]} />
         </View>
 
         <Text style={styles.title}>Datos Estadísticos</Text>
@@ -54,7 +64,6 @@ export default function DatosEstadisticosScreen({ navigation }: Props) {
             </View>
           ))}
 
-          {/* Etnia selector */}
           <View>
             <Text style={styles.fieldLabel}>Etnia</Text>
             <TouchableOpacity style={styles.select} onPress={() => setShowEtnias(!showEtnias)}>
@@ -75,7 +84,7 @@ export default function DatosEstadisticosScreen({ navigation }: Props) {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.btn} onPress={() => navigation.navigate('DatosSalud')}>
+        <TouchableOpacity style={styles.btn} onPress={handleNext}>
           <Text style={styles.btnText}>Siguiente →</Text>
         </TouchableOpacity>
 
@@ -87,7 +96,9 @@ export default function DatosEstadisticosScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.bg },
   container: { flexGrow: 1, paddingHorizontal: Spacing.screen, paddingBottom: 40 },
-  stepText: { marginTop: 24, fontSize: 12, color: Colors.textSecondary },
+  back: { marginTop: 20, marginBottom: 8 },
+  backArrow: { fontSize: 24, color: Colors.white },
+  stepText: { fontSize: 12, color: Colors.textSecondary },
   progressBg: { height: 6, backgroundColor: '#262626', borderRadius: 3, marginTop: 8, marginBottom: 24 },
   progressFill: { height: 6, backgroundColor: Colors.accent, borderRadius: 3 },
   title: { fontSize: 26, fontWeight: '800', color: Colors.white, marginBottom: 6 },
