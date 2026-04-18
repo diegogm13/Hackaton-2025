@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, ScrollView, Modal,
   ActivityIndicator, KeyboardAvoidingView, Platform, Linking, Switch,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation';
 import { AuthService } from '../../services/AuthService';
+import { userProfileApi } from '../../services/userProfileApi';
 import { useUser } from '../../context/UserContext';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { Colors, Spacing } from '../../theme';
@@ -24,6 +26,9 @@ const LUGAR = ['Gimnasio', 'En casa', 'Al aire libre', 'Mixto'];
 const META_NUTRICION = ['Déficit calórico', 'Superávit calórico', 'Mantenimiento', 'Mejorar digestión'];
 const CONTROL_CAL = ['Sí, activamente', 'A veces', 'Quiero empezar', 'Sin contar calorías'];
 const OBJETIVO_DIETA = ['Bajar de peso', 'Subir de peso (Volumen)', 'Mejorar hábitos alimenticios'];
+const DIET_PLAN_STORAGE_KEY = '@plan_dieta_generado';
+
+const buildUserScopedKey = (baseKey: string, userId: string) => `${baseKey}:${userId}`;
 
 type ModalType = 'plan' | 'notificaciones' | 'privacidad' | null;
 
@@ -44,6 +49,58 @@ export default function PerfilScreen() {
   const [notifNutricion, setNotifNutricion] = useState(true);
   const [notifProgreso, setNotifProgreso] = useState(false);
   const [notifTips, setNotifTips] = useState(true);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    let mounted = true;
+
+    const hydrateRemoteProfile = async () => {
+      const [userResult, clinicalResult, dietResult] = await Promise.allSettled([
+        userProfileApi.getUserById(user.id),
+        userProfileApi.getClinicalProfile(user.id),
+        userProfileApi.getUserDiet(user.id),
+      ]);
+
+      if (!mounted) return;
+
+      if (userResult.status === 'fulfilled') {
+        updateUser({
+          nombre: userResult.value.username || user?.nombre,
+          email: userResult.value.email || user?.email,
+        });
+      }
+
+      if (clinicalResult.status === 'fulfilled') {
+        updateUser({
+          peso: clinicalResult.value.pesoKg ?? user?.peso,
+          altura: clinicalResult.value.alturaCm ?? user?.altura,
+        });
+      }
+
+      if (dietResult.status === 'fulfilled') {
+        const normalizedPlan = {
+          plan_diario: dietResult.value.plan_diario,
+          resumen_calorico_diario: dietResult.value.resumen_calorico_diario,
+          recomendaciones_personalizadas: dietResult.value.recomendaciones_personalizadas,
+          advertencias_ingredientes: dietResult.value.advertencias_ingredientes,
+        };
+
+        await AsyncStorage.setItem(
+          buildUserScopedKey(DIET_PLAN_STORAGE_KEY, user.id),
+          JSON.stringify(normalizedPlan),
+        );
+      }
+    };
+
+    hydrateRemoteProfile().catch(() => {
+      // Pantalla de perfil debe seguir funcionando aunque fallen endpoints remotos.
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, [user?.id]);
 
   const planLabel = PLAN_LABELS[user?.plan ?? 2];
   const planIcon = PLAN_ICONS[user?.plan ?? 2];

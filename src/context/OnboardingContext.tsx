@@ -10,6 +10,8 @@ export type OnboardingData = {
   plan: number;
   metaEjercicio: number;
   lugarEntrenamiento: number;
+  nivelActual: number;
+  diasEntrenamiento: number;
   metaNutricional: number;
   controlCalorias: number;
   // DatosEstadisticos
@@ -30,7 +32,7 @@ export type OnboardingData = {
   medicamentos: string[];
   // ObjetivoDieta
   objetivoDieta: number;
-  planEjercicios: PlanEjercicioGenerado; 
+  planEjercicios: PlanEjercicioGenerado;
   userId?: string;
   token?: string;
 };

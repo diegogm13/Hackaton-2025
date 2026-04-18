@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosError } from 'axios';
+import { userProfileApi } from './userProfileApi';
 
 export type UserProfile = {
   id: string;
@@ -101,6 +102,7 @@ function parseAxiosError(error: unknown): ApiError {
 const USERS_KEY = '@all_users';
 const CURRENT_USER_KEY = '@current_user_id';
 const AUTH_TOKEN_KEY = '@auth_token';
+const DIET_PLAN_STORAGE_KEY = '@plan_dieta_generado';
 
 const delay = () => new Promise<void>(r => setTimeout(r, 800));
 
@@ -168,6 +170,26 @@ async function persistCurrentSession(user: UserProfile, token?: string): Promise
   }
 }
 
+function buildUserScopedKey(baseKey: string, userId: string): string {
+  return `${baseKey}:${userId}`;
+}
+
+async function persistUserDiet(userId: string): Promise<void> {
+  const diet = await userProfileApi.getUserDiet(userId);
+
+  const normalizedPlan = {
+    plan_diario: diet.plan_diario,
+    resumen_calorico_diario: diet.resumen_calorico_diario,
+    recomendaciones_personalizadas: diet.recomendaciones_personalizadas,
+    advertencias_ingredientes: diet.advertencias_ingredientes,
+  };
+
+  await AsyncStorage.setItem(
+    buildUserScopedKey(DIET_PLAN_STORAGE_KEY, userId),
+    JSON.stringify(normalizedPlan),
+  );
+}
+
 async function registerUser(payload: RegisterUserDto): Promise<RegisterResponse> {
   try {
     const { data } = await api.post<RegisterResponse>('/auth/register', payload);
@@ -211,6 +233,13 @@ export const AuthService = {
 
       await saveUsers(users);
       await persistCurrentSession(merged, token);
+
+      try {
+        await persistUserDiet(merged.id);
+      } catch {
+        // No bloquear login si la consulta de dieta falla.
+      }
+
       return { success: true, user: merged };
     } catch {
       // Fallback local para desarrollo offline o backend no disponible.
@@ -294,8 +323,6 @@ export const AuthService = {
   },
 
   async logout(): Promise<void> {
-    await AsyncStorage.removeItem(CURRENT_USER_KEY);
-    await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
-    await AsyncStorage.removeItem('hasCompletedOnboarding');
+    await AsyncStorage.clear();
   },
 };

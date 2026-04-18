@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { Colors, Spacing } from '../../theme';
-import { generarPlanEjercicioDesdeOnboarding, ApiError } from '../../services/ejercicios/ExerciseService';
 
 type Props = {
   navigation: NativeStackNavigationProp<OnboardingStackParamList, 'PreguntasEjercicio'>;
@@ -33,28 +32,17 @@ export default function PreguntasEjercicioScreen({ navigation }: Props) {
   const [lugar, setLugar] = useState(0);
   const [nivel, setNivel] = useState(0);
   const [dias, setDias] = useState(1);
-  const [loading, setLoading] = useState(false);
   const { data, updateData } = useOnboarding();
 
-  const handleNext = async () => {
-    try {
-        setLoading(true);
-        
-        // El servicio buscará data.userId automáticamente
-        const respuesta = await generarPlanEjercicioDesdeOnboarding(
-            data, 
-        );
-
-        updateData({ planEjercicios: respuesta.plan_generado });
-        
-        // Navegación
-        navigation.navigate(data.plan === 2 ? 'PreguntasNutricion' : 'DatosEstadisticos');
-    } catch (error) {
-        Alert.alert("Error", error instanceof ApiError ? error.message : "Error de conexión");
-    } finally {
-        setLoading(false);
-    }
-};
+  const handleNext = () => {
+    updateData({
+      metaEjercicio: meta,
+      lugarEntrenamiento: lugar,
+      nivelActual: nivel,
+      diasEntrenamiento: dias,
+    });
+    navigation.navigate(data.plan === 2 ? 'PreguntasNutricion' : 'DatosEstadisticos');
+  };
 
   return (
     <SafeAreaView style={styles.safe}>

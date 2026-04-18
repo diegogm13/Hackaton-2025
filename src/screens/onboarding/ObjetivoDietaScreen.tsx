@@ -10,12 +10,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { OnboardingStackParamList, RootStackParamList } from '../../navigation';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { AuthService } from '../../services/AuthService';
+import { generarPlanDietaDesdeOnboarding } from '../../services/dietas/DietService';
+import { generarPlanEjercicioDesdeOnboarding } from '../../services/ejercicios/ExerciseService';
 import { useUser } from '../../context/UserContext';
 import { Colors, Spacing } from '../../theme';
 
 type Props = {
   navigation: NativeStackNavigationProp<OnboardingStackParamList, 'ObjetivoDieta'>;
 };
+
+const EXERCISE_PLAN_STORAGE_KEY = '@plan_ejercicio_generado';
+const DIET_PLAN_STORAGE_KEY = '@plan_dieta_generado';
+
+const buildUserScopedKey = (baseKey: string, userId: string) => `${baseKey}:${userId}`;
 
 const OBJETIVOS = [
   {
@@ -41,53 +48,135 @@ const OBJETIVOS = [
 export default function ObjetivoDietaScreen({ navigation }: Props) {
   const [selected, setSelected] = useState<number>(0);
   const [saving, setSaving] = useState(false);
-  const { data, updateData, resetData } = useOnboarding();
+  const { data, resetData } = useOnboarding();
   const { setUser } = useUser();
   const rootNav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const handleFinish = async () => {
+    if (saving) return;
     setSaving(true);
-    try {
-      const result = await AuthService.register({
-        nombre: data.nombre ?? '',
-        email: data.email ?? '',
-        password: data.password ?? '',
-        plan: data.plan ?? 2,
-        metaEjercicio: data.metaEjercicio ?? 0,
-        lugarEntrenamiento: data.lugarEntrenamiento ?? 0,
-        metaNutricional: data.metaNutricional ?? 0,
-        controlCalorias: data.controlCalorias ?? 0,
-        altura: data.altura ?? '',
-        peso: data.peso ?? '',
-        musculo: data.musculo ?? '',
-        grasa: data.grasa ?? '',
-        etnia: data.etnia ?? '',
-        rutina: data.rutina ?? 1,
-        disponibilidad: data.disponibilidad ?? 1,
-        dieta: data.dieta ?? 0,
-        habitos: data.habitos ?? [false, false, false],
-        alergias: data.alergias ?? '',
-        togglesSalud: data.togglesSalud ?? [false, false, false, false],
-        condicionesMedicas: data.condicionesMedicas ?? [],
-        medicamentos: data.medicamentos ?? [],
-        objetivoDieta: selected,
-      });
 
-      if (!result.success) {
-        setSaving(false);
+    const registerPayload = {
+      nombre: data.nombre ?? '',
+      email: data.email ?? '',
+      password: data.password ?? '',
+      plan: data.plan ?? 2,
+      metaEjercicio: data.metaEjercicio ?? 0,
+      lugarEntrenamiento: data.lugarEntrenamiento ?? 0,
+      metaNutricional: data.metaNutricional ?? 0,
+      controlCalorias: data.controlCalorias ?? 0,
+      altura: data.altura ?? '',
+      peso: data.peso ?? '',
+      musculo: data.musculo ?? '',
+      grasa: data.grasa ?? '',
+      etnia: data.etnia ?? '',
+      rutina: data.rutina ?? 1,
+      disponibilidad: data.disponibilidad ?? 1,
+      dieta: data.dieta ?? 0,
+      habitos: data.habitos ?? [false, false, false],
+      alergias: data.alergias ?? '',
+      togglesSalud: data.togglesSalud ?? [false, false, false, false],
+      condicionesMedicas: data.condicionesMedicas ?? [],
+      medicamentos: data.medicamentos ?? [],
+      objetivoDieta: selected,
+    };
+
+    try {
+      const result = await AuthService.register(registerPayload);
+
+      if (!result.success || !result.user) {
         Alert.alert('Error', result.error ?? 'No se pudo crear la cuenta. Intenta de nuevo.');
         return;
       }
 
-      setUser(result.user!);
+      const token = await AsyncStorage.getItem('@auth_token');
+
+      const shouldCallExercisePlan = registerPayload.plan === 0 || registerPayload.plan === 2;
+      const shouldCallDietPlan = registerPayload.plan === 1 || registerPayload.plan === 2;
+
+      const exercisePayload = {
+        userId: result.user.id,
+        metaEjercicio: registerPayload.metaEjercicio,
+        lugarEntrenamiento: registerPayload.lugarEntrenamiento,
+        nivelActual: data.nivelActual ?? 0,
+        diasEntrenamiento: data.diasEntrenamiento ?? 1,
+      };
+
+      const dietPayload = {
+        id: result.user.id,
+        altura: registerPayload.altura,
+        peso: registerPayload.peso,
+        dieta: registerPayload.dieta,
+        rutina: registerPayload.rutina,
+        disponibilidad: registerPayload.disponibilidad,
+        habitos: registerPayload.habitos,
+        alergias: registerPayload.alergias,
+        condicionesMedicas: registerPayload.condicionesMedicas,
+        medicamentos: registerPayload.medicamentos,
+        objetivoDieta: registerPayload.objetivoDieta,
+        metaNutricional: registerPayload.metaNutricional,
+        controlCalorias: registerPayload.controlCalorias,
+        plan: registerPayload.plan,
+      };
+
+      if (shouldCallExercisePlan && shouldCallDietPlan) {
+        const [exerciseResponse, dietResponse] = await Promise.all([
+          generarPlanEjercicioDesdeOnboarding(
+            exercisePayload,
+            token ?? undefined,
+            { usuarioId: result.user.id },
+          ),
+          generarPlanDietaDesdeOnboarding(
+            dietPayload,
+            token ?? undefined,
+            { usuarioId: result.user.id },
+          ),
+        ]);
+
+        await AsyncStorage.multiSet([
+          [
+            buildUserScopedKey(EXERCISE_PLAN_STORAGE_KEY, result.user.id),
+            JSON.stringify(exerciseResponse.plan_generado),
+          ],
+          [
+            buildUserScopedKey(DIET_PLAN_STORAGE_KEY, result.user.id),
+            JSON.stringify(dietResponse.plan_generado),
+          ],
+        ]);
+      } else if (shouldCallExercisePlan) {
+        const exerciseResponse = await generarPlanEjercicioDesdeOnboarding(
+          exercisePayload,
+          token ?? undefined,
+          { usuarioId: result.user.id },
+        );
+
+        await AsyncStorage.setItem(
+          buildUserScopedKey(EXERCISE_PLAN_STORAGE_KEY, result.user.id),
+          JSON.stringify(exerciseResponse.plan_generado),
+        );
+      } else if (shouldCallDietPlan) {
+        const dietResponse = await generarPlanDietaDesdeOnboarding(
+          dietPayload,
+          token ?? undefined,
+          { usuarioId: result.user.id },
+        );
+
+        await AsyncStorage.setItem(
+          buildUserScopedKey(DIET_PLAN_STORAGE_KEY, result.user.id),
+          JSON.stringify(dietResponse.plan_generado),
+        );
+      }
+
+      setUser(result.user);
       await AsyncStorage.setItem('hasCompletedOnboarding', 'true');
       resetData();
       rootNav.dispatch(
         CommonActions.reset({ index: 0, routes: [{ name: 'MainApp' }] })
       );
     } catch (e: any) {
-      setSaving(false);
       Alert.alert('Error', e?.message ?? 'Ocurrió un error inesperado.');
+    } finally {
+      setSaving(false);
     }
   };
 
